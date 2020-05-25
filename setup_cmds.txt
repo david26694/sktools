@@ -1,0 +1,10 @@
+conda create -y --name sktools python==3.7
+conda activate sktools
+pip install -r requirements_dev.txt
+make install
+git config user.name david26694
+git config user.email david26694@gmail.com
+pip install pmlb
+conda install nb_conda
+
+
