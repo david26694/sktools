@@ -112,3 +112,7 @@ ENV/
 
 # My tests
 dirty_tests
+
+# Take out ALL csv
+*.csv
+
