@@ -1,4 +1,4 @@
-"""M-probability estimate"""
+"""Nested target encoder"""
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator
@@ -6,16 +6,21 @@ from category_encoders.ordinal import OrdinalEncoder
 import category_encoders.utils as util
 from sklearn.utils.random import check_random_state
 
-__author__ = 'Jan Motl'
+__author__ = 'david26694 & cmougan'
 
+
+# TODO: better docs
+# TODO: handle missing as parent
 
 class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
-    """M-probability estimate of likelihood.
+    """Estimate of likelihood for nested data.
 
-    This is a simplified version of target encoder, which goes under names like m-probability estimate or
-    additive smoothing with known incidence rates. In comparison to target encoder, m-probability estimate
-    has only one tunable parameter (`m`), while target encoder has two tunable parameters (`min_samples_leaf`
-    and `smoothing`).
+    This is a generalization of the m-probability estimate. The main difference
+    is that instead of using a global prior, it can use a more fine-tuned prior.
+    This only works for nested data. For instance, I have individuals who live
+    in counties, that are inside states. If I want to estimate the likelihood
+    encoding for a county, it is better to use as prior the estimate for the
+    state instead of the global estimate.
 
     Parameters
     ----------
@@ -26,6 +31,8 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         a list of columns to encode, if None, all string columns will be encoded.
     drop_invariant: bool
         boolean for whether or not to drop encoded columns with 0 variance.
+    parent_dict: dict
+        dictionary representing the child - parent relationship. keys are children.
     return_df: bool
         boolean for whether to return a pandas DataFrame from transform (otherwise it will be a numpy array).
     handle_missing: str
@@ -36,7 +43,10 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         adds normal (Gaussian) distribution noise into training data in order to decrease overfitting (testing data are untouched).
     sigma: float
         standard deviation (spread or "width") of the normal distribution.
-    m: float
+    m_prior: float
+        this is the "m" in the m-probability estimate for . Higher value of m results into stronger shrinking.
+        M is non-negative.
+    m_parent: float
         this is the "m" in the m-probability estimate. Higher value of m results into stronger shrinking.
         M is non-negative.
 
@@ -74,13 +84,7 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
     References
     ----------
 
-    .. [1] A Preprocessing Scheme for High-Cardinality Categorical Attributes in Classification and Prediction Problems, equation 7, from
-    https://dl.acm.org/citation.cfm?id=507538
-
-    .. [2] On estimating probabilities in tree pruning, equation 1, from
-    https://link.springer.com/chapter/10.1007/BFb0017010
-
-    .. [3] Additive smoothing, from
+    .. [1] Additive smoothing, from
     https://en.wikipedia.org/wiki/Additive_smoothing#Generalized_to_the_case_of_known_incidence_rates
 
     """
@@ -265,18 +269,21 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
             col = switch.get('col')
             values = switch.get('mapping')
 
+            # Easy case, the child is not in the child - parent dictionary.
+            # We just use the plain m-estimator with the global prior
             if col not in self.parent_dict:
                 stats = y.groupby(X[col]).agg(['sum', 'count', 'mean'])
 
                 estimate = (stats['sum'] + prior * self.m_prior) / (
                     stats['count'] + self.m_prior)
 
-            # Compute prior statistics
             else:
+                # Compute parent statistics
                 parent_col = self.parent_dict[col]
                 parent_stats = y.groupby(X[parent_col]).agg(
                     ['sum', 'count']
                 )
+                # Use global prior to estimate parent stats
                 parent_stats['mean'] = (parent_stats[
                                             'sum'] + prior * self.m_prior) / \
                                        (parent_stats['count'] + self.m_prior)
@@ -288,9 +295,10 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
                     raise ValueError(
                         'There are children with more than one parent')
 
-                # Calculate sum and count of the target for each unique value in the feature col
+                # Compute child statistics
                 stats = y.groupby(X[col]).agg(['sum', 'count', 'mean'])
 
+                # Relate parent and child stats
                 groups = X.groupby(
                     [parent_col, col]
                 ).size().reset_index().iloc[:, 0:2]
@@ -303,7 +311,7 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
                 )
                 stats = stats.set_index(col)
 
-                # Calculate the m-probability estimate
+                # Calculate the m-probability estimate using the parent prior
                 estimate = (stats['sum'] + stats['mean_parent'] * self.m_parent
                             ) / (stats['count'] + self.m_parent)
 
