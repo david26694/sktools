@@ -9,7 +9,6 @@ from sklearn.utils.random import check_random_state
 __author__ = 'david26694 & cmougan'
 
 
-# TODO: better docs
 # TODO: handle missing as parent
 
 class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
@@ -44,10 +43,12 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
     sigma: float
         standard deviation (spread or "width") of the normal distribution.
     m_prior: float
-        this is the "m" in the m-probability estimate for . Higher value of m results into stronger shrinking.
+        this is the "m" in the m-probability estimate for the global mean. Higher value of m results into stronger shrinking.
+        It is used whenever we estimate a likelihood using the global mean as a prior.
         M is non-negative.
     m_parent: float
         this is the "m" in the m-probability estimate. Higher value of m results into stronger shrinking.
+        It is used whenever we estimate a likelihood using the parent mean as a prior.
         M is non-negative.
 
     Example
