@@ -5,6 +5,7 @@
 import unittest
 
 import sktools
+from sktools.nested_te import NestedTargetEncoder
 import pandas as pd
 from scipy.sparse import csr_matrix
 import numpy as np
@@ -150,6 +151,7 @@ class TestEmptyExtractor(unittest.TestCase):
             self.expected_output
         )
 
+
 class TestPercentileEncoder(unittest.TestCase):
     """Tests for percentile encoder."""
 
@@ -205,7 +207,8 @@ class TestPercentileEncoder(unittest.TestCase):
         )
 
     def test_new_category(self):
-        """The global median of the target is 3. If new categories are passed to
+        """
+        The global median of the target is 3. If new categories are passed to
         the transformer, then the output should be 3
         """
         transformer_median = sktools.PercentileEncoder(percentile=50)
@@ -229,3 +232,45 @@ class TestPercentileEncoder(unittest.TestCase):
             transformer_median.transform(new_df),
             new_medians
         )
+
+class TestNestedTargetEncoder(unittest.TestCase):
+    """Tests for percentile encoder."""
+
+    def setUp(self):
+        """Create dataframe with categories and a target variable"""
+
+        self.col = 'col_1'
+        self.parent_col = 'parent_col_1'
+        self.X = pd.DataFrame({
+            'col_1': ['a', 'a', 'b', 'b', 'b', 'c', 'c', 'd', 'd', 'd'],
+            'parent_col_1': ['e', 'e', 'e', 'e', 'e', 'f', 'f', 'f', 'f', 'f']
+        })
+        self.y = pd.Series([1, 2, 3, 1, 2, 4, 4, 5, 4, 4.5])
+        self.output = pd.DataFrame(dict(
+            col_1=[1.6, 1.6, 1.95, 1.95, 1.95, 4.1, 4.1, 4.45, 4.45, 4.45],
+            parent_col_1=self.X[self.parent_col]
+        ))
+
+    def test_harcoded_nested(self):
+        te = NestedTargetEncoder(
+            cols=self.col,
+            parent_dict=dict(col_1=self.parent_col),
+            m_prior=0
+        )
+        pd.testing.assert_frame_equal(
+            te.fit_transform(self.X, self.y),
+            self.output
+        )
+
+
+#    col_1 parent_col_1
+# 0   1.60            e
+# 1   1.60            e
+# 2   1.95            e
+# 3   1.95            e
+# 4   1.95            e
+# 5   4.10            f
+# 6   4.10            f
+# 7   4.45            f
+# 8   4.45            f
+# 9   4.45            f

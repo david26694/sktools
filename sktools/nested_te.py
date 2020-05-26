@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator
 from category_encoders.ordinal import OrdinalEncoder
+from category_encoders.m_estimate import MEstimateEncoder
 import category_encoders.utils as util
 from sklearn.utils.random import check_random_state
 
@@ -113,6 +114,8 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         self.m_prior = m_prior
         self.m_parent = m_parent
         self.feature_names = None
+        self.parent_cols = None
+        self.parent_encoder = None
 
     # noinspection PyUnusedLocal
     def fit(self, X, y, **kwargs):
@@ -135,9 +138,18 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
 
         """
 
+        # Create parent encoder and fit it
+        self.parent_cols = list(self.parent_dict.values())
+        self.parent_encoder = MEstimateEncoder(
+            cols=self.parent_cols, m=self.m_prior
+        )
+        self.parent_encoder.fit(X, y)
+
         # Unite parameters into pandas types
         X = util.convert_input(X)
         y = util.convert_input_vector(y, X.index).astype(float)
+
+        #TODO: test there is no parent in cols
 
         # The lengths must be equal
         if X.shape[0] != y.shape[0]:
@@ -278,43 +290,42 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
                 estimate = (stats['sum'] + prior * self.m_prior) / (
                     stats['count'] + self.m_prior)
 
+            # Not so easy case, we have to deal with the parent
             else:
-                # Compute parent statistics
                 parent_col = self.parent_dict[col]
-                parent_stats = y.groupby(X[parent_col]).agg(
-                    ['sum', 'count']
-                )
-                # Use global prior to estimate parent stats
-                parent_stats['mean'] = \
-                    (parent_stats['sum'] + prior * self.m_prior) / \
-                    (parent_stats['count'] + self.m_prior)
 
                 # Check son-parent unique relation
                 unique_parents = X.groupby([col]).agg(
-                    {parent_col: 'nunique'}).loc[:, parent_col]
+                    {parent_col: 'nunique'}
+                )[parent_col]
+
                 if any(unique_parents > 1):
                     raise ValueError(
                         'There are children with more than one parent'
                     )
 
+                # Get parent stats
+                te_parent = self.parent_encoder.transform(X)[parent_col]
+                parent_mapping = pd.DataFrame({
+                    'te_parent': te_parent,
+                    parent_col: X[parent_col]
+                }).drop_duplicates()
+
                 # Compute child statistics
                 stats = y.groupby(X[col]).agg(['sum', 'count', 'mean'])
 
                 # Relate parent and child stats
-                groups = X.groupby(
-                    [parent_col, col]
-                ).size().reset_index().loc[:, [parent_col, col]]
+                groups = X.loc[:, [parent_col, col]].drop_duplicates()
 
                 stats = stats.merge(groups, how='left', on=col).merge(
-                    parent_stats,
+                    parent_mapping,
                     how='left',
-                    on=parent_col,
-                    suffixes=('', '_parent')
+                    on=parent_col
                 )
                 stats = stats.set_index(col)
 
                 # Calculate the m-probability estimate using the parent prior
-                estimate = (stats['sum'] + stats['mean_parent'] * self.m_parent
+                estimate = (stats['sum'] + stats['te_parent'] * self.m_parent
                             ) / (stats['count'] + self.m_parent)
 
             # Ignore unique columns. This helps to prevent overfitting on id-like columns
@@ -337,9 +348,12 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         return mapping
 
     def _score(self, X, y):
+        #X_parents = self.parent_encoder.transform(X)
         for col in self.cols:
             # Score the column
             X[col] = X[col].map(self.mapping[col])
+
+            #parent_col = self.parent_dict[col]
 
             # Randomization is meaningful only for training data -> we do it only if y is present
             if self.randomized and y is not None:
