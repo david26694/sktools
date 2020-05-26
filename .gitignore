@@ -116,3 +116,6 @@ dirty_tests
 # Take out ALL csv
 *.csv
 
+setup_cmds.txt
+
+notebooks/

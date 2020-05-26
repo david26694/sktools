@@ -88,7 +88,7 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
     def __init__(self, verbose=0, cols=None, drop_invariant=False,
                  parent_dict={}, return_df=True, handle_unknown='value',
                  handle_missing='value', random_state=None, randomized=False,
-                 sigma=0.05, m=1.0):
+                 sigma=0.05, m_prior=1.0, m_parent=1.0):
         self.verbose = verbose
         self.return_df = return_df
         self.drop_invariant = drop_invariant
@@ -105,7 +105,8 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         self.random_state = random_state
         self.randomized = randomized
         self.sigma = sigma
-        self.m = m
+        self.m_prior = m_prior
+        self.m_parent = m_parent
         self.feature_names = None
 
     # noinspection PyUnusedLocal
@@ -258,49 +259,53 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         self._sum = y.sum()
         self._count = y.count()
         prior = self._sum / self._count
+        # TODO: what happens with NAs?
 
         for switch in self.ordinal_encoder.category_mapping:
             col = switch.get('col')
             values = switch.get('mapping')
 
+            if col not in self.parent_dict:
+                stats = y.groupby(X[col]).agg(['sum', 'count', 'mean'])
+
+                estimate = (stats['sum'] + prior * self.m_prior) / (
+                    stats['count'] + self.m_prior)
+
             # Compute prior statistics
-            parent_col = self.parent_dict[col]
-            parent_stats = y.groupby(X[parent_col]).agg(
-                ['sum', 'count', 'mean']
-            )
-            # parent_stats['mean'] = (parent_stats['sum'] + prior * self.m) / \
-            #                        (parent_stats['count'] + self.m)
+            else:
+                parent_col = self.parent_dict[col]
+                parent_stats = y.groupby(X[parent_col]).agg(
+                    ['sum', 'count']
+                )
+                parent_stats['mean'] = (parent_stats[
+                                            'sum'] + prior * self.m_prior) / \
+                                       (parent_stats['count'] + self.m_prior)
 
-            # TODO: delete
-            #col = 'col'
-            #parent_col = 'parent_col'
-            #X = pd.DataFrame({
-            #    'col': ['a', 'a', 'b', 'b', 'b', 'c', 'c', 'd', 'd'],
-            #    'parent_col': ['e', 'e', 'e', 'e', 'e', 'f', 'f', 'f', 'f']
-            #})
-            #y = pd.Series([1, 2, 3, 1, 2, 4, 4, 5, 4])
+                # Check son-parent unique relation
+                unique_parents = X.groupby([col]).agg(
+                    {parent_col: 'nunique'}).loc[:, parent_col]
+                if any(unique_parents > 1):
+                    raise ValueError(
+                        'There are children with more than one parent')
 
-            # Check son-parent unique relation
-            unique_parents = X.groupby([col]).agg(
-                {parent_col: 'nunique'}).loc[:, parent_col]
-            if any(unique_parents > 1):
-                raise ValueError('There are children with more than one parent')
+                # Calculate sum and count of the target for each unique value in the feature col
+                stats = y.groupby(X[col]).agg(['sum', 'count', 'mean'])
 
-            # Calculate sum and count of the target for each unique value in the feature col
-            stats = y.groupby(X[col]).agg(['sum', 'count', 'mean'])
+                groups = X.groupby(
+                    [parent_col, col]
+                ).size().reset_index().iloc[:, 0:2]
 
-            groups = X.groupby([parent_col, col]).size().reset_index().iloc[:,
-                     0:2]
+                stats = stats.merge(groups, how='left', on=col).merge(
+                    parent_stats,
+                    how='left',
+                    on=parent_col,
+                    suffixes=('', '_parent')
+                )
+                stats = stats.set_index(col)
 
-            stats.merge(groups, how='left', on=col).merge(parent_stats,
-                                                          how='left',
-                                                          on=parent_col,
-                                                          suffixes=(
-                                                              '', '_parent'))
-
-            # Calculate the m-probability estimate
-            estimate = (stats['sum'] + stats['mean_parent'] * self.m) / (
-                stats['count'] + self.m)
+                # Calculate the m-probability estimate
+                estimate = (stats['sum'] + stats['mean_parent'] * self.m_parent
+                            ) / (stats['count'] + self.m_parent)
 
             # Ignore unique columns. This helps to prevent overfitting on id-like columns
             if len(stats['count']) == self._count:
