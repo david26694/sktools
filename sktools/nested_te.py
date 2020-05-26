@@ -285,16 +285,17 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
                     ['sum', 'count']
                 )
                 # Use global prior to estimate parent stats
-                parent_stats['mean'] = (parent_stats[
-                                            'sum'] + prior * self.m_prior) / \
-                                       (parent_stats['count'] + self.m_prior)
+                parent_stats['mean'] = \
+                    (parent_stats['sum'] + prior * self.m_prior) / \
+                    (parent_stats['count'] + self.m_prior)
 
                 # Check son-parent unique relation
                 unique_parents = X.groupby([col]).agg(
                     {parent_col: 'nunique'}).loc[:, parent_col]
                 if any(unique_parents > 1):
                     raise ValueError(
-                        'There are children with more than one parent')
+                        'There are children with more than one parent'
+                    )
 
                 # Compute child statistics
                 stats = y.groupby(X[col]).agg(['sum', 'count', 'mean'])
@@ -302,7 +303,7 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
                 # Relate parent and child stats
                 groups = X.groupby(
                     [parent_col, col]
-                ).size().reset_index().iloc[:, 0:2]
+                ).size().reset_index().loc[:, [parent_col, col]]
 
                 stats = stats.merge(groups, how='left', on=col).merge(
                     parent_stats,
