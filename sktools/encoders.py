@@ -356,6 +356,7 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
                     estimate.loc[values.loc[np.nan]] = np.nan
                 elif self.handle_missing == 'value':
                     estimate.loc[-2] = prior
+            # With parents - we leave the imputation for afterwards
             else:
                 # Unknown
                 estimate.loc[-1] = np.nan
@@ -380,15 +381,22 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
 
             # Harder case - having parents
             else:
-                parent_col = self.parent_dict[col]
+
+                # Split missing and unkown values
                 unknown = X[col] == -1
+                missing = X[col] == -2
+
+                # Apply regular transformation
                 X[col] = X[col].map(self.mapping[col])
+
+                # Impute unknown with parent
+                parent_col = self.parent_dict[col]
                 if self.handle_unknown == 'value':
                     X[col] = X[col].mask(unknown, X_parents[parent_col])
-                # TODO: maybe missing but not unknown -> handle properly
-                # TODO: comment better
+
+                # Impute missing with parent
                 if self.handle_missing == 'value':
-                    X[col] = X[col].mask(pd.isnull, X_parents[parent_col])
+                    X[col] = X[col].mask(missing, X_parents[parent_col])
 
             # Randomization is meaningful only for training data -> we do it only if y is present
             if self.randomized and y is not None:

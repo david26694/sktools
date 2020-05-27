@@ -233,8 +233,9 @@ class TestPercentileEncoder(unittest.TestCase):
             new_medians
         )
 
+
 class TestNestedTargetEncoder(unittest.TestCase):
-    """Tests for percentile encoder."""
+    """Tests for nested target encoder."""
 
     def setUp(self):
         """Create dataframe with categories and a target variable"""
@@ -247,9 +248,17 @@ class TestNestedTargetEncoder(unittest.TestCase):
         })
         self.y = pd.Series([1, 2, 3, 1, 2, 4, 4, 5, 4, 4.5])
 
+        self.parent_means = list(self.y.groupby(self.X[self.parent_col]).mean())
+        self.parents = ['e', 'f']
 
     def test_parent_prior(self):
-
+        """
+        Simple case:
+        There is no prior from the global to the group mean (m_prior = 0).
+        As the m_parent is 1, the mean for group a is (as mean_group_e = 1.8):
+        (1 + 2 + mean_group_e ) / 3 = (1 + 2 + 1.8) / 3 + 1.6
+        The same works for b, c and d
+        """
         expected_output = pd.DataFrame(dict(
             col_1=[1.6, 1.6, 1.95, 1.95, 1.95, 4.1, 4.1, 4.45, 4.45, 4.45],
             parent_col_1=self.X[self.parent_col]
@@ -266,11 +275,10 @@ class TestNestedTargetEncoder(unittest.TestCase):
         )
 
     def test_no_parent(self):
-
-        # expected_output = pd.DataFrame(dict(
-        #     col_1=[1.5, 1.5, 2, 2, 2, 4, 4, 4.5, 4.5, 4.5],
-        #     parent_col_1=self.X[self.parent_col]
-        # ))
+        """
+        When using no priors, the functionalities should be the same as for
+        m estimator.
+        """
 
         te = sktools.NestedTargetEncoder(
             cols=self.col,
@@ -288,17 +296,24 @@ class TestNestedTargetEncoder(unittest.TestCase):
             m_te.fit_transform(self.X, self.y)
         )
 
-    def test_new_classes(self):
+    def test_unknown_missing_imputation(self):
+        """
+        When new categories and unknown values are given, we expect the encoder
+        to give the parent means (at least with default configuration).
+        """
 
-        parent_means = self.y.groupby(self.X[self.parent_col]).mean()
-        parent_means_df = pd.DataFrame({
-            self.col: parent_means,
-            self.parent_col: ['e', 'f']
-        }).reset_index(drop=True)
-
+        # First two rows are new categories
+        # Last two rows are missing values
+        # Parents are e, f, e, f
         new_x = pd.DataFrame({
-            self.col: ['x', 'y'],
-            self.parent_col: ['e', 'f']
+            self.col: ['x', 'y', np.NaN, np.NaN],
+            self.parent_col: self.parents + self.parents
+        })
+
+        # We expect to get parent means
+        expected_output_df = pd.DataFrame({
+            self.col: self.parent_means + self.parent_means,
+            self.parent_col: self.parents + self.parents
         })
 
         te = sktools.NestedTargetEncoder(
@@ -311,7 +326,44 @@ class TestNestedTargetEncoder(unittest.TestCase):
 
         pd.testing.assert_frame_equal(
             te.transform(new_x),
-            parent_means_df
+            expected_output_df
         )
 
+    def test_missing_na(self):
+        """
+        When new categories and unknown values are given, we expect the encoder
+        to give the parent means. If we specify return_nan, we want it to
+        return nan
+        """
 
+        # First two rows are new categories
+        # Last two rows are missing values
+        # Parents are e, f, e, f
+        new_x = pd.DataFrame({
+            self.col: ['x', 'y', np.nan, np.nan],
+            self.parent_col: self.parents + self.parents
+        })
+
+        # In the transformer we specify unknown -> return nan
+        # We expect to get:
+        # - nan for the unkown
+        # - parent means for the missing
+        expected_output_df = pd.DataFrame({
+            self.col: [np.nan, np.nan] + self.parent_means,
+            self.parent_col: self.parents + self.parents
+        })
+
+        te = sktools.NestedTargetEncoder(
+            cols=self.col,
+            parent_dict=dict(col_1=self.parent_col),
+            m_prior=0,
+            handle_missing='value',
+            handle_unknown='return_nan'
+        )
+
+        te.fit(self.X, self.y)
+
+        pd.testing.assert_frame_equal(
+            te.transform(new_x),
+            expected_output_df
+        )
