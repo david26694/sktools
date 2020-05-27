@@ -5,9 +5,9 @@
 import unittest
 
 import sktools
-from sktools.nested_te import NestedTargetEncoder
 import pandas as pd
 from scipy.sparse import csr_matrix
+from category_encoders import MEstimateEncoder
 import numpy as np
 
 
@@ -242,35 +242,76 @@ class TestNestedTargetEncoder(unittest.TestCase):
         self.col = 'col_1'
         self.parent_col = 'parent_col_1'
         self.X = pd.DataFrame({
-            'col_1': ['a', 'a', 'b', 'b', 'b', 'c', 'c', 'd', 'd', 'd'],
-            'parent_col_1': ['e', 'e', 'e', 'e', 'e', 'f', 'f', 'f', 'f', 'f']
+            self.col: ['a', 'a', 'b', 'b', 'b', 'c', 'c', 'd', 'd', 'd'],
+            self.parent_col: ['e', 'e', 'e', 'e', 'e', 'f', 'f', 'f', 'f', 'f']
         })
         self.y = pd.Series([1, 2, 3, 1, 2, 4, 4, 5, 4, 4.5])
-        self.output = pd.DataFrame(dict(
+
+
+    def test_parent_prior(self):
+
+        expected_output = pd.DataFrame(dict(
             col_1=[1.6, 1.6, 1.95, 1.95, 1.95, 4.1, 4.1, 4.45, 4.45, 4.45],
             parent_col_1=self.X[self.parent_col]
         ))
 
-    def test_harcoded_nested(self):
-        te = NestedTargetEncoder(
+        te = sktools.NestedTargetEncoder(
             cols=self.col,
             parent_dict=dict(col_1=self.parent_col),
             m_prior=0
         )
         pd.testing.assert_frame_equal(
             te.fit_transform(self.X, self.y),
-            self.output
+            expected_output
+        )
+
+    def test_no_parent(self):
+
+        # expected_output = pd.DataFrame(dict(
+        #     col_1=[1.5, 1.5, 2, 2, 2, 4, 4, 4.5, 4.5, 4.5],
+        #     parent_col_1=self.X[self.parent_col]
+        # ))
+
+        te = sktools.NestedTargetEncoder(
+            cols=self.col,
+            parent_dict=dict(col_1=self.parent_col),
+            m_prior=0,
+            m_parent=0
+        )
+
+        m_te = MEstimateEncoder(
+            cols=self.col,
+            m=0
+        )
+        pd.testing.assert_frame_equal(
+            te.fit_transform(self.X, self.y),
+            m_te.fit_transform(self.X, self.y)
+        )
+
+    def test_new_classes(self):
+
+        parent_means = self.y.groupby(self.X[self.parent_col]).mean()
+        parent_means_df = pd.DataFrame({
+            self.col: parent_means,
+            self.parent_col: ['e', 'f']
+        }).reset_index(drop=True)
+
+        new_x = pd.DataFrame({
+            self.col: ['x', 'y'],
+            self.parent_col: ['e', 'f']
+        })
+
+        te = sktools.NestedTargetEncoder(
+            cols=self.col,
+            parent_dict=dict(col_1=self.parent_col),
+            m_prior=0
+        )
+
+        te.fit(self.X, self.y)
+
+        pd.testing.assert_frame_equal(
+            te.transform(new_x),
+            parent_means_df
         )
 
 
-#    col_1 parent_col_1
-# 0   1.60            e
-# 1   1.60            e
-# 2   1.95            e
-# 3   1.95            e
-# 4   1.95            e
-# 5   4.10            f
-# 6   4.10            f
-# 7   4.45            f
-# 8   4.45            f
-# 9   4.45            f
