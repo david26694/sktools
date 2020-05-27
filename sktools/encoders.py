@@ -382,7 +382,7 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
             # Harder case - having parents
             else:
 
-                # Split missing and unkown values
+                # Split missing and unknown values
                 unknown = X[col] == -1
                 missing = X[col] == -2
 

@@ -346,7 +346,7 @@ class TestNestedTargetEncoder(unittest.TestCase):
 
         # In the transformer we specify unknown -> return nan
         # We expect to get:
-        # - nan for the unkown
+        # - nan for the unknown
         # - parent means for the missing
         expected_output_df = pd.DataFrame({
             self.col: [np.nan, np.nan] + self.parent_means,
