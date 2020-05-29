@@ -246,6 +246,12 @@ class TestNestedTargetEncoder(unittest.TestCase):
             self.col: ['a', 'a', 'b', 'b', 'b', 'c', 'c', 'd', 'd', 'd'],
             self.parent_col: ['e', 'e', 'e', 'e', 'e', 'f', 'f', 'f', 'f', 'f']
         })
+
+        self.X_array = pd.DataFrame({
+            self.col: ['a', 'a', 'b', 'b', 'b', 'c', 'c', 'd', 'd', 'd'],
+            self.parent_col: ['e', 'e', 'e', 'e', 'e', 'f', 'f', 'f', 'f', 'f']
+        }).values
+
         self.y = pd.Series([1, 2, 3, 1, 2, 4, 4, 5, 4, 4.5])
 
         self.parent_means = list(self.y.groupby(self.X[self.parent_col]).mean())
@@ -256,7 +262,7 @@ class TestNestedTargetEncoder(unittest.TestCase):
         Simple case:
         There is no prior from the global to the group mean (m_prior = 0).
         As the m_parent is 1, the mean for group a is (as mean_group_e = 1.8):
-        (1 + 2 + mean_group_e ) / 3 = (1 + 2 + 1.8) / 3 + 1.6
+        (1 + 2 + mean_group_e ) / 3 = (1 + 2 + 1.8) / 3 = 1.6
         The same works for b, c and d
         """
         expected_output = pd.DataFrame(dict(
@@ -272,6 +278,34 @@ class TestNestedTargetEncoder(unittest.TestCase):
         pd.testing.assert_frame_equal(
             te.fit_transform(self.X, self.y),
             expected_output
+        )
+
+    def test_numpy_array(self):
+        """
+        Check that nested target encoder also works for numpy arrays
+        """
+        expected_output = pd.DataFrame(dict(
+            col_1=[1.6, 1.6, 1.95, 1.95, 1.95, 4.1, 4.1, 4.45, 4.45, 4.45],
+            parent_col_1=self.X[self.parent_col]
+        )).values
+
+        te = sktools.NestedTargetEncoder(
+            cols=0,
+            parent_dict={0: 1},
+            m_prior=0
+        )
+
+        te.fit(self.X_array, self.y)
+        output = te.transform(self.X_array).values
+
+        np.testing.assert_almost_equal(
+            output[:, 0],
+            expected_output[:, 0]
+        )
+
+        np.testing.assert_equal(
+            output[:, 1],
+            expected_output[:, 1]
         )
 
     def test_no_parent(self):

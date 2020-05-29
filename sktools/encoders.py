@@ -335,6 +335,9 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
                     how='left',
                     on=parent_col
                 )
+
+                # In case of numpy array
+                stats = stats.rename(columns={'key_0': col})
                 stats = stats.set_index(col)
 
                 # Calculate the m-probability estimate using the parent prior
