@@ -401,3 +401,31 @@ class TestNestedTargetEncoder(unittest.TestCase):
             te.transform(new_x),
             expected_output_df
         )
+
+    def test_all_missing(self):
+        """
+        If everything's missing or unknow , we expect by default to return
+        global mean
+        """
+        new_x = pd.DataFrame({
+            self.col: ['x', np.nan, 'x', np.nan],
+            self.parent_col: ['z', 'z', np.nan, np.nan]
+        })
+
+        te = sktools.NestedTargetEncoder(
+            cols=self.col,
+            parent_dict=dict(col_1=self.parent_col),
+            m_prior=0
+        )
+
+        te.fit(self.X, self.y)
+
+        expected_output_df = pd.DataFrame({
+            self.col: self.y.mean(),
+            self.parent_col: ['z', 'z', np.nan, np.nan]
+        })
+
+        pd.testing.assert_frame_equal(
+            te.transform(new_x),
+            expected_output_df
+        )
