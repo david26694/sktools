@@ -7,6 +7,7 @@ from sklearn.base import BaseEstimator
 from category_encoders.ordinal import OrdinalEncoder
 from category_encoders.m_estimate import MEstimateEncoder
 import category_encoders.utils as util
+from sklearn.utils.random import check_random_state
 
 """Nested target encoder"""
 
