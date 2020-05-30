@@ -12,20 +12,20 @@ __author__ = 'cmougan & david26694'
 class PercentileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
     """Percentile Encoding for categorical features.
 
-    For the case of categorical target: features are replaced with a blend of
-    posterior percentile of the target given particular categorical value and
-    the prior probability of the target over all the training data.
 
-    For the case of continuous target: features are replaced with a blend of the
-    expected value of the target given particular categorical value and the
-    expected value of the target over all the training data.
+    This a statistically modified version of target MEstimate encoder where selected features
+    are replaced the statistical percentile instead than the mean. Replacing with the 
+    median is a particular case where self.percentile = 0.5. In comparison to MEstimateEncoder
+    it has two tunable parameter `m` and `percentile`
 
     Parameters
     ----------
 
     verbose: int
         integer indicating verbosity of the output. 0 for none.
-    cols: list
+    percentile: int
+         integer indicating statistical percenile. 50 for median.
+    cols: list        
         a list of columns to encode, if None, all string columns will be encoded.
     drop_invariant: bool
         boolean for whether or not to drop columns with 0 variance.
@@ -69,12 +69,23 @@ class PercentileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
 
     References
     ----------
+    .. [1] A Preprocessing Scheme for High-Cardinality Categorical Attributes in Classification and Prediction Problems, equation 7, from
+    https://dl.acm.org/citation.cfm?id=507538
+
+    .. [2] On estimating probabilities in tree pruning, equation 1, from
+    https://link.springer.com/chapter/10.1007/BFb0017010
+
+    .. [3] Additive smoothing, from
+    https://en.wikipedia.org/wiki/Additive_smoothing#Generalized_to_the_case_of_known_incidence_rates
+
+    .. [4] Target encoding done the right way,
+    https://maxhalford.github.io/blog/target-encoding/
 
     """
 
     def __init__(self, verbose=0, cols=None, drop_invariant=False,
                  return_df=True, handle_missing='value',
-                 handle_unknown='value', percentile=50):
+                 handle_unknown='value', percentile=50,m=1.0):
         self.return_df = return_df
         self.drop_invariant = drop_invariant
         self.drop_cols = []
@@ -85,9 +96,10 @@ class PercentileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         self.mapping = None
         self.handle_unknown = handle_unknown
         self.handle_missing = handle_missing
-        self._percentile = None
         self.feature_names = None
         self.percentile = percentile
+        self.m = m
+        
 
     def fit(self, X, y, **kwargs):
         """Fit encoder according to X and y.
@@ -154,32 +166,40 @@ class PercentileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
                           "Not found in generated cols.\n{}".format(e))
 
         return self
+    
+
 
     def fit_percentile_encoding(self, X, y):
         mapping = {}
 
+        # Calculate global statistics
+        prior = self._percentile = np.percentile(y, self.percentile)
+        self._sum = y.sum()
+        self._count = y.count()
+        
         for switch in self.ordinal_encoder.category_mapping:
             col = switch.get('col')
             values = switch.get('mapping')
+ 
+            # Calculate sum, count and percentile of the target for each unique value in the feature col
+            stats = y.groupby(X[col]).agg([lambda x: np.percentile(x, self.percentile),'sum', 'count'])
+            stats.columns = ['percentile','sum','count']
+            
+            # Calculate the m-probability estimate of the percentile
+            estimate = (stats['count'] * stats['percentile'] + prior * self.m) / (stats['count'] + self.m)
 
-            prior = self._percentile = np.percentile(y, self.percentile)
-
-            stats = y.groupby(X[col]).apply(
-                lambda x: np.percentile(x, self.percentile))
-
-            smoothing = stats
 
             if self.handle_unknown == 'return_nan':
-                smoothing.loc[-1] = np.nan
+                estimate.loc[-1] = np.nan
             elif self.handle_unknown == 'value':
-                smoothing.loc[-1] = prior
+                estimate.loc[-1] = prior
 
             if self.handle_missing == 'return_nan':
-                smoothing.loc[values.loc[np.nan]] = np.nan
+                estimate.loc[values.loc[np.nan]] = np.nan
             elif self.handle_missing == 'value':
-                smoothing.loc[-2] = prior
+                estimate.loc[-2] = prior
 
-            mapping[col] = smoothing
+            mapping[col] = estimate
 
         return mapping
 
