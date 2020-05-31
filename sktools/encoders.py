@@ -25,6 +25,8 @@ class PercentileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         integer indicating verbosity of the output. 0 for none.
     percentile: int
          integer indicating statistical percenile. 50 for median.
+    m: int
+         integer indicating the smoothing parameter. 0 for no smoothing.
     cols: list        
         a list of columns to encode, if None, all string columns will be encoded.
     drop_invariant: bool
