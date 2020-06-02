@@ -456,15 +456,12 @@ class TestGroupQuantile(unittest.TestCase):
             }
         )
 
+        # TODO: only 1 class should give .5 -> smoothing?
         self.output = self.X.copy().assign(
             x_quantile_group=[0., 1, 1, 0, 1, 0, 0.5]
         )
-
-        self.new_output = pd.DataFrame(
-            {
-                'x': [1.],
-                'group': ['d']
-            }
+        self.new_output = self.new_X.copy().assign(
+            x_quantile_group=[1.]
         )
 
     def test_basic_example(self):
@@ -485,8 +482,6 @@ class TestGroupQuantile(unittest.TestCase):
         transformation = groupedquantile.transform(self.new_X)
         pd.testing.assert_frame_equal(transformation, self.new_output)
 
-
-    # TODO: only 1 class should give .5 -> smoothing?
 
 
 class TestGroupFeaturizer(unittest.TestCase):
@@ -528,6 +523,7 @@ class TestGroupFeaturizer(unittest.TestCase):
         featurizer = sktools.PercentileGroupFeaturizer(
             feature_mapping={'x': 'group'}
         )
+
         featurizer.fit(self.X)
 
         pd.testing.assert_frame_equal(
@@ -553,9 +549,8 @@ class TestGroupFeaturizer(unittest.TestCase):
         )
         featurizer.fit(self.X)
 
-        console.log(featurizer.transform(self.new_X))
-
         pd.testing.assert_frame_equal(
             featurizer.transform(self.new_X).iloc[:, 0:3],
             self.new_output
         )
+

@@ -5,8 +5,10 @@ from sklearn.preprocessing import QuantileTransformer
 
 from rich.console import Console
 from rich.traceback import install
+
 console = Console()
 install()
+
 
 class GroupedQuantileTransformer(BaseEstimator, TransformerMixin):
     '''
@@ -77,13 +79,11 @@ class GroupedQuantileTransformer(BaseEstimator, TransformerMixin):
             transform_feature_name = f'{col}_quantile_{group}'
             X[transform_feature_name] = np.zeros(X.shape[0])
 
-            categories = self.transformer_dict[group].keys()
-            # categories = X[group].unique()
+            categories = X[group].unique()
+            fit_categories = self.transformer_dict[group].keys()
 
             for category in categories:
-                if category not in X[group].unique() and category is not np.nan:
-                    pass
-                elif category is not np.nan:
+                if category is not np.nan and category in fit_categories:
                     x_category = X[X[group] == category]
                     x_col = x_category.loc[:, [col]]
                     transformer = self.transformer_dict[group][category]
@@ -94,15 +94,18 @@ class GroupedQuantileTransformer(BaseEstimator, TransformerMixin):
                     ] = x_transform
 
                 else:
-                    x_category = X[X[group].isnull()]
-                    transformer = self.transformer_dict[group][category]
+                    nonnull_fit_cats = set(fit_categories).difference([np.nan])
+                    other_cats_condition = ~X[group].isin(nonnull_fit_cats)
+
+                    x_category = X[other_cats_condition]
+                    transformer = self.transformer_dict[group][np.nan]
 
                     x_transform = transformer.transform(
                         x_category.loc[:, [col]]
                     )
 
-                    X.loc[
-                        X[group].isnull(), transform_feature_name] = x_transform
+                    X.loc[other_cats_condition, transform_feature_name] = \
+                        x_transform
 
         return X
 
@@ -110,11 +113,12 @@ class GroupedQuantileTransformer(BaseEstimator, TransformerMixin):
 class PercentileGroupFeaturizer(BaseEstimator, TransformerMixin):
 
     def __init__(self, feature_mapping, percentile=50, create_features=True,
-                 handle_missing='value'):
+                 handle_missing='value', handle_unknown='value'):
         self.feature_mapping = feature_mapping
         self.percentile = percentile
         self.create_features = create_features
         self.handle_missing = handle_missing
+        self.handle_unknown = handle_unknown
         self.saved_percentiles = {}
 
     def fit(self, X, y=None):
@@ -128,7 +132,6 @@ class PercentileGroupFeaturizer(BaseEstimator, TransformerMixin):
 
             # If handle missing is value -> add global percentile to missing
             if self.handle_missing == 'value':
-
                 global_pctl = X[col].agg(
                     lambda x: x.quantile(self.percentile / 100)
                 )
@@ -151,9 +154,18 @@ class PercentileGroupFeaturizer(BaseEstimator, TransformerMixin):
         for col, group in self.feature_mapping.items():
 
             X = X.merge(self.saved_percentiles[col], on=group, how='left')
+            pctl_col_name = f'p{self.percentile}_{col}_{group}'
+
+            if self.handle_unknown == 'value' and self.handle_missing == 'value':
+                groups_fit = self.saved_percentiles[col][group]
+                new_condition = (~X[group].isin(groups_fit)) & \
+                                X[pctl_col_name].isnull()
+
+                x_fit = self.saved_percentiles[col]
+                imputation = float(x_fit.loc[x_fit[group].isnull()][pctl_col_name])
+                X.loc[new_condition, pctl_col_name] = imputation
 
             if self.create_features:
-                pctl_col_name = f'p{self.percentile}_{col}_{group}'
                 diff_name = f'diff_p{self.percentile}_{col}_{group}'
                 relu_diff_name = f'relu_diff_p{self.percentile}_{col}_{group}'
                 ratio_name = f'ratio_p{self.percentile}_{col}_{group}'
