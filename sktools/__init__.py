@@ -8,3 +8,4 @@ from .selectors import TypeSelector, ItemSelector
 from .matrix_denser import MatrixDenser
 from .imputer import IsEmptyExtractor
 from .encoders import PercentileEncoder, NestedTargetEncoder
+from .quantilegroups import GroupedQuantileTransformer, PercentileGroupFeaturizer

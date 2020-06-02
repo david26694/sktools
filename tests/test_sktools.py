@@ -10,6 +10,12 @@ from scipy.sparse import csr_matrix
 from category_encoders import MEstimateEncoder
 import numpy as np
 
+from rich.console import Console
+from rich.traceback import install
+
+console = Console()
+install()
+
 
 class TestTypeSelector(unittest.TestCase):
     """Tests for type selector."""
@@ -428,4 +434,128 @@ class TestNestedTargetEncoder(unittest.TestCase):
         pd.testing.assert_frame_equal(
             te.transform(new_x),
             expected_output_df
+        )
+
+
+class TestGroupQuantile(unittest.TestCase):
+    """Tests for group quantile."""
+
+    def setUp(self):
+        """Create dataframe with different column types"""
+        self.X = pd.DataFrame(
+            {
+                'x': [1, 2, 3, 2, 20, 0, 10],
+                'group': ['a', 'a', 'b', 'b', None, None, 'c']
+            }
+        )
+
+        self.new_X = pd.DataFrame(
+            {
+                'x': [100.],
+                'group': ['d']
+            }
+        )
+
+        self.output = self.X.copy().assign(
+            x_quantile_group=[0., 1, 1, 0, 1, 0, 0.5]
+        )
+
+        self.new_output = pd.DataFrame(
+            {
+                'x': [1.],
+                'group': ['d']
+            }
+        )
+
+    def test_basic_example(self):
+        groupedquantile = sktools.GroupedQuantileTransformer(
+            feature_mapping={'x': 'group'}
+        )
+        groupedquantile.fit(self.X)
+
+        transformation = groupedquantile.transform(self.X)
+        pd.testing.assert_frame_equal(transformation, self.output)
+
+    def test_unknown(self):
+        groupedquantile = sktools.GroupedQuantileTransformer(
+            feature_mapping={'x': 'group'}
+        )
+        groupedquantile.fit(self.X)
+
+        transformation = groupedquantile.transform(self.new_X)
+        pd.testing.assert_frame_equal(transformation, self.new_output)
+
+
+    # TODO: only 1 class should give .5 -> smoothing?
+
+
+class TestGroupFeaturizer(unittest.TestCase):
+    """Tests for group quantile."""
+
+    def setUp(self):
+        """Create dataframe with different column types"""
+        self.X = pd.DataFrame(
+            {
+                'x': [1, 2, 3, 2, 20, 0, 10],
+                'group': ['a', 'a', 'b', 'b', None, None, 'c']
+            }
+        )
+
+        self.new_X = pd.DataFrame(
+            {
+                'x': [1, 2, 3, 4, 5],
+                'group': ['a', 'b', 'c', 'd', None]
+            }
+        )
+
+        self.output = self.X.copy().assign(
+            p50_x_group=[1.5, 1.5, 2.5, 2.5, 2., 2., 10],
+            diff_p50_x_group=[-.5, .5, .5, -.5, 18., -2, 0],
+            relu_diff_p50_x_group=[0, .5, .5, 0, 18., 0., 0],
+            ratio_p50_x_group=[2. / 3, 4. / 3, 1.2, 0.8, 10, 0., 1.]
+        )
+
+        self.missing_output = self.X.copy().assign(
+            p50_x_group=[1.5, 1.5, 2.5, 2.5, None, None, 10],
+            diff_p50_x_group=[-.5, .5, .5, -.5, None, None, 0]
+        )
+
+        self.new_output = self.new_X.copy().assign(
+            p50_x_group=[1.5, 2.5, 10, 2., 2.]
+        )
+
+    def test_basic_featurizer(self):
+        featurizer = sktools.PercentileGroupFeaturizer(
+            feature_mapping={'x': 'group'}
+        )
+        featurizer.fit(self.X)
+
+        pd.testing.assert_frame_equal(
+            featurizer.transform(self.X),
+            self.output
+        )
+
+    def test_missing(self):
+        featurizer = sktools.PercentileGroupFeaturizer(
+            feature_mapping={'x': 'group'},
+            handle_missing='return_nan'
+        )
+        featurizer.fit(self.X)
+
+        pd.testing.assert_frame_equal(
+            featurizer.transform(self.X).iloc[:, :4],
+            self.missing_output
+        )
+
+    def test_new_input(self):
+        featurizer = sktools.PercentileGroupFeaturizer(
+            feature_mapping={'x': 'group'}
+        )
+        featurizer.fit(self.X)
+
+        console.log(featurizer.transform(self.new_X))
+
+        pd.testing.assert_frame_equal(
+            featurizer.transform(self.new_X).iloc[:, 0:3],
+            self.new_output
         )
