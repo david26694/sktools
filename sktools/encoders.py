@@ -11,7 +11,7 @@ from sklearn.utils.random import check_random_state
 
 """Nested target encoder"""
 
-__author__ = 'david26694 & cmougan'
+__author__ = "david26694 & cmougan"
 
 
 class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
@@ -93,10 +93,21 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
 
     """
 
-    def __init__(self, verbose=0, cols=None, drop_invariant=False,
-                 parent_dict={}, return_df=True, handle_unknown='value',
-                 handle_missing='value', random_state=None, randomized=False,
-                 sigma=0.05, m_prior=1.0, m_parent=1.0):
+    def __init__(
+        self,
+        verbose=0,
+        cols=None,
+        drop_invariant=False,
+        parent_dict={},
+        return_df=True,
+        handle_unknown="value",
+        handle_missing="value",
+        random_state=None,
+        randomized=False,
+        sigma=0.05,
+        m_prior=1.0,
+        m_parent=1.0,
+    ):
         self.verbose = verbose
         self.return_df = return_df
         self.drop_invariant = drop_invariant
@@ -152,7 +163,7 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
             random_state=self.random_state,
             randomized=self.randomized,
             sigma=self.sigma,
-            m=self.m_prior
+            m=self.m_prior,
         )
         self.parent_encoder.fit(X, y)
 
@@ -162,8 +173,13 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
 
         # The lengths must be equal
         if X.shape[0] != y.shape[0]:
-            raise ValueError("The length of X is " + str(
-                X.shape[0]) + " but length of y is " + str(y.shape[0]) + ".")
+            raise ValueError(
+                "The length of X is "
+                + str(X.shape[0])
+                + " but length of y is "
+                + str(y.shape[0])
+                + "."
+            )
 
         self._dim = X.shape[1]
 
@@ -173,9 +189,9 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         else:
             self.cols = util.convert_cols_to_list(self.cols)
 
-        if self.handle_missing == 'error':
+        if self.handle_missing == "error":
             if X[self.cols].isnull().any().any():
-                raise ValueError('Columns to be encoded can not contain null')
+                raise ValueError("Columns to be encoded can not contain null")
 
         # Check that children and parents are disjoint
         children = set(self.parent_dict.keys())
@@ -186,8 +202,8 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         self.ordinal_encoder = OrdinalEncoder(
             verbose=self.verbose,
             cols=self.cols,
-            handle_unknown='value',
-            handle_missing='value'
+            handle_unknown="value",
+            handle_missing="value",
         )
         self.ordinal_encoder = self.ordinal_encoder.fit(X)
         X_ordinal = self.ordinal_encoder.transform(X)
@@ -202,14 +218,17 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         if self.drop_invariant:
             self.drop_cols = []
             generated_cols = util.get_generated_cols(X, X_temp, self.cols)
-            self.drop_cols = [x for x in generated_cols if
-                              X_temp[x].var() <= 10e-5]
+            self.drop_cols = [
+                x for x in generated_cols if X_temp[x].var() <= 10e-5
+            ]
             try:
                 [self.feature_names.remove(x) for x in self.drop_cols]
             except KeyError as e:
                 if self.verbose > 0:
-                    print("Could not remove column from feature names."
-                          "Not found in generated cols.\n{}".format(e))
+                    print(
+                        "Could not remove column from feature names."
+                        "Not found in generated cols.\n{}".format(e)
+                    )
         return self
 
     def transform(self, X, y=None, override_return_df=False):
@@ -233,29 +252,36 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
 
         """
 
-        if self.handle_missing == 'error':
+        if self.handle_missing == "error":
             if X[self.cols].isnull().any().any():
-                raise ValueError('Columns to be encoded can not contain null')
+                raise ValueError("Columns to be encoded can not contain null")
 
         if self._dim is None:
             raise ValueError(
-                'Must train encoder before it can be used to transform data.')
+                "Must train encoder before it can be used to transform data."
+            )
 
         # Unite the input into pandas types
         X = util.convert_input(X)
 
         # Then make sure that it is the right size
         if X.shape[1] != self._dim:
-            raise ValueError('Unexpected input dimension %d, expected %d' % (
-                X.shape[1], self._dim,))
+            raise ValueError(
+                "Unexpected input dimension %d, expected %d"
+                % (X.shape[1], self._dim,)
+            )
 
         # If we are encoding the training data, we have to check the target
         if y is not None:
             y = util.convert_input_vector(y, X.index).astype(float)
             if X.shape[0] != y.shape[0]:
-                raise ValueError("The length of X is " + str(
-                    X.shape[0]) + " but length of y is " + str(
-                    y.shape[0]) + ".")
+                raise ValueError(
+                    "The length of X is "
+                    + str(X.shape[0])
+                    + " but length of y is "
+                    + str(y.shape[0])
+                    + "."
+                )
 
         if not list(self.cols):
             return X
@@ -265,9 +291,9 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
 
         X = self.ordinal_encoder.transform(X)
 
-        if self.handle_unknown == 'error':
+        if self.handle_unknown == "error":
             if X[self.cols].isin([-1]).any().any():
-                raise ValueError('Unexpected categories found in dataframe')
+                raise ValueError("Unexpected categories found in dataframe")
 
         # Loop over the columns and replace the nominal values with the numbers
         X = self._score(X, y)
@@ -293,72 +319,71 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         prior = self._sum / self._count
 
         for switch in self.ordinal_encoder.category_mapping:
-            col = switch.get('col')
-            values = switch.get('mapping')
+            col = switch.get("col")
+            values = switch.get("mapping")
 
             # Easy case, the child is not in the child - parent dictionary.
             # We just use the plain m-estimator with the global prior
             if col not in self.parent_dict:
-                stats = y.groupby(X[col]).agg(['sum', 'count', 'mean'])
+                stats = y.groupby(X[col]).agg(["sum", "count", "mean"])
 
-                estimate = (stats['sum'] + prior * self.m_prior) / (
-                    stats['count'] + self.m_prior)
+                estimate = (stats["sum"] + prior * self.m_prior) / (
+                    stats["count"] + self.m_prior
+                )
 
             # Not so easy case, we have to deal with the parent
             else:
                 parent_col = self.parent_dict[col]
 
                 # Check son-parent unique relation
-                unique_parents = X.groupby([col]).agg(
-                    {parent_col: 'nunique'}
-                )[parent_col]
+                unique_parents = X.groupby([col]).agg({parent_col: "nunique"})[
+                    parent_col
+                ]
 
                 if any(unique_parents > 1):
                     raise ValueError(
-                        'There are children with more than one parent'
+                        "There are children with more than one parent"
                     )
 
                 # Get parent stats
                 te_parent = self.parent_encoder.transform(X)[parent_col]
-                parent_mapping = pd.DataFrame({
-                    'te_parent': te_parent,
-                    parent_col: X[parent_col]
-                }).drop_duplicates()
+                parent_mapping = pd.DataFrame(
+                    {"te_parent": te_parent, parent_col: X[parent_col]}
+                ).drop_duplicates()
 
                 # Compute child statistics
-                stats = y.groupby(X[col]).agg(['sum', 'count', 'mean'])
+                stats = y.groupby(X[col]).agg(["sum", "count", "mean"])
 
                 # Relate parent and child stats
                 groups = X.loc[:, [parent_col, col]].drop_duplicates()
 
-                stats = stats.merge(groups, how='left', on=col).merge(
-                    parent_mapping,
-                    how='left',
-                    on=parent_col
+                stats = stats.merge(groups, how="left", on=col).merge(
+                    parent_mapping, how="left", on=parent_col
                 )
 
                 # In case of numpy array
-                stats = stats.rename(columns={'key_0': col})
+                stats = stats.rename(columns={"key_0": col})
                 stats = stats.set_index(col)
 
                 # Calculate the m-probability estimate using the parent prior
-                estimate = (stats['sum'] + stats['te_parent'] * self.m_parent
-                            ) / (stats['count'] + self.m_parent)
+                estimate = (
+                    stats["sum"] + stats["te_parent"] * self.m_parent
+                ) / (stats["count"] + self.m_parent)
 
             # Ignore unique columns. This helps to prevent overfitting on id-like columns
-            if len(stats['count']) == self._count:
+            if len(stats["count"]) == self._count:
                 estimate[:] = prior
 
             # Column doesn't have parent - handle imputation as always
             if col not in self.parent_dict:
-                if self.handle_unknown == 'return_nan':
+                if self.handle_unknown == "return_nan":
                     estimate.loc[-1] = np.nan
-                elif self.handle_unknown == 'value':
+                elif self.handle_unknown == "value":
                     estimate.loc[-1] = prior
 
-                if self.handle_missing == 'return_nan':
+                if self.handle_missing == "return_nan":
                     estimate.loc[values.loc[np.nan]] = np.nan
-                elif self.handle_missing == 'value':
+                elif self.handle_missing == "value":
                     estimate.loc[-2] = prior
             # With parents - we leave the imputation for afterwards
             else:
@@ -395,19 +420,19 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
 
                 # Impute unknown with parent
                 parent_col = self.parent_dict[col]
-                if self.handle_unknown == 'value':
+                if self.handle_unknown == "value":
                     X[col] = X[col].mask(unknown, X_parents[parent_col])
 
                 # Impute missing with parent
-                if self.handle_missing == 'value':
+                if self.handle_missing == "value":
                     X[col] = X[col].mask(missing, X_parents[parent_col])
 
             # Randomization is meaningful only for training data -> we do it only if y is present
             if self.randomized and y is not None:
                 random_state_generator = check_random_state(self.random_state)
-                X[col] = (X[col] * random_state_generator.normal(1., self.sigma,
-                                                                 X[col].shape[
-                                                                     0]))
+                X[col] = X[col] * random_state_generator.normal(
+                    1.0, self.sigma, X[col].shape[0]
+                )
 
         return X
 
@@ -424,14 +449,15 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         """
         if not isinstance(self.feature_names, list):
             raise ValueError(
-                "Estimator has to be fitted to return feature names.")
+                "Estimator has to be fitted to return feature names."
+            )
         else:
             return self.feature_names
 
 
 """Percentile Encoder"""
 
-__author__ = 'cmougan & david26694'
+__author__ = "cmougan & david26694"
 
 
 class PercentileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
@@ -497,9 +523,16 @@ class PercentileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
 
     """
 
-    def __init__(self, verbose=0, cols=None, drop_invariant=False,
-                 return_df=True, handle_missing='value',
-                 handle_unknown='value', percentile=50):
+    def __init__(
+        self,
+        verbose=0,
+        cols=None,
+        drop_invariant=False,
+        return_df=True,
+        handle_missing="value",
+        handle_unknown="value",
+        percentile=50,
+    ):
         self.return_df = return_df
         self.drop_invariant = drop_invariant
         self.drop_cols = []
@@ -537,8 +570,13 @@ class PercentileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         y = util.convert_input_vector(y, X.index)
 
         if X.shape[0] != y.shape[0]:
-            raise ValueError("The length of X is " + str(
-                X.shape[0]) + " but length of y is " + str(y.shape[0]) + ".")
+            raise ValueError(
+                "The length of X is "
+                + str(X.shape[0])
+                + " but length of y is "
+                + str(y.shape[0])
+                + "."
+            )
 
         self._dim = X.shape[1]
 
@@ -548,15 +586,15 @@ class PercentileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         else:
             self.cols = util.convert_cols_to_list(self.cols)
 
-        if self.handle_missing == 'error':
+        if self.handle_missing == "error":
             if X[self.cols].isnull().any().any():
-                raise ValueError('Columns to be encoded can not contain null')
+                raise ValueError("Columns to be encoded can not contain null")
 
         self.ordinal_encoder = OrdinalEncoder(
             verbose=self.verbose,
             cols=self.cols,
-            handle_unknown='value',
-            handle_missing='value'
+            handle_unknown="value",
+            handle_missing="value",
         )
         self.ordinal_encoder = self.ordinal_encoder.fit(X)
         X_ordinal = self.ordinal_encoder.transform(X)
@@ -569,14 +607,17 @@ class PercentileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
             self.drop_cols = []
             X_temp = self.transform(X)
             generated_cols = util.get_generated_cols(X, X_temp, self.cols)
-            self.drop_cols = [x for x in generated_cols if
-                              X_temp[x].var() <= 10e-5]
+            self.drop_cols = [
+                x for x in generated_cols if X_temp[x].var() <= 10e-5
+            ]
             try:
                 [self.feature_names.remove(x) for x in self.drop_cols]
             except KeyError as e:
                 if self.verbose > 0:
-                    print("Could not remove column from feature names."
-                          "Not found in generated cols.\n{}".format(e))
+                    print(
+                        "Could not remove column from feature names."
+                        "Not found in generated cols.\n{}".format(e)
+                    )
 
         return self
 
@@ -584,24 +625,25 @@ class PercentileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         mapping = {}
 
         for switch in self.ordinal_encoder.category_mapping:
-            col = switch.get('col')
-            values = switch.get('mapping')
+            col = switch.get("col")
+            values = switch.get("mapping")
 
             prior = self._percentile = np.percentile(y, self.percentile)
 
             stats = y.groupby(X[col]).apply(
-                lambda x: np.percentile(x, self.percentile))
+                lambda x: np.percentile(x, self.percentile)
+            )
 
             smoothing = stats
 
-            if self.handle_unknown == 'return_nan':
+            if self.handle_unknown == "return_nan":
                 smoothing.loc[-1] = np.nan
-            elif self.handle_unknown == 'value':
+            elif self.handle_unknown == "value":
                 smoothing.loc[-1] = prior
 
-            if self.handle_missing == 'return_nan':
+            if self.handle_missing == "return_nan":
                 smoothing.loc[values.loc[np.nan]] = np.nan
-            elif self.handle_missing == 'value':
+            elif self.handle_missing == "value":
                 smoothing.loc[-2] = prior
 
             mapping[col] = smoothing
@@ -624,38 +666,45 @@ class PercentileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
 
         """
 
-        if self.handle_missing == 'error':
+        if self.handle_missing == "error":
             if X[self.cols].isnull().any().any():
-                raise ValueError('Columns to be encoded can not contain null')
+                raise ValueError("Columns to be encoded can not contain null")
 
         if self._dim is None:
             raise ValueError(
-                'Must train encoder before it can be used to transform data.')
+                "Must train encoder before it can be used to transform data."
+            )
 
         # unite the input into pandas types
         X = util.convert_input(X)
 
         # then make sure that it is the right size
         if X.shape[1] != self._dim:
-            raise ValueError('Unexpected input dimension %d, expected %d' % (
-                X.shape[1], self._dim,))
+            raise ValueError(
+                "Unexpected input dimension %d, expected %d"
+                % (X.shape[1], self._dim,)
+            )
 
         # if we are encoding the training data, we have to check the target
         if y is not None:
             y = util.convert_input_vector(y, X.index)
             if X.shape[0] != y.shape[0]:
-                raise ValueError("The length of X is " + str(
-                    X.shape[0]) + " but length of y is " + str(
-                    y.shape[0]) + ".")
+                raise ValueError(
+                    "The length of X is "
+                    + str(X.shape[0])
+                    + " but length of y is "
+                    + str(y.shape[0])
+                    + "."
+                )
 
         if not list(self.cols):
             return X
 
         X = self.ordinal_encoder.transform(X)
 
-        if self.handle_unknown == 'error':
+        if self.handle_unknown == "error":
             if X[self.cols].isin([-1]).any().any():
-                raise ValueError('Unexpected categories found in dataframe')
+                raise ValueError("Unexpected categories found in dataframe")
 
         X = self.percentile_encode(X)
 
@@ -690,7 +739,8 @@ class PercentileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
 
         if not isinstance(self.feature_names, list):
             raise ValueError(
-                'Must fit data first. Affected feature names are not known '
-                'before.')
+                "Must fit data first. Affected feature names are not known "
+                "before."
+            )
         else:
             return self.feature_names
