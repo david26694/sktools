@@ -3,16 +3,52 @@ import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.preprocessing import QuantileTransformer
 
-from rich.console import Console
-from rich.traceback import install
 
-console = Console()
-install()
+"""Grouped Quantile Featurizer"""
+
+__author__ = "david26694"
 
 
 class GroupedQuantileTransformer(BaseEstimator, TransformerMixin):
     """
-    Transformer that computes the group quantile of a feature
+    Computes the group quantile of a numeric feature with respect to a categorical feature.
+
+    For instance, if each datum is an apartment, and we have both the price and the city,
+    this feature tries to model how expensive is an apartment in its city. The most
+    expensive apartment in the city will score 1, and the cheapest will score 0.
+
+    It is equivalent at what it is done in:
+    https://stackoverflow.com/questions/33899369/ranking-order-per-group-in-pandas
+
+    Parameters
+    ----------
+
+    feature_mapping: dict
+        mapping from numeric variables to categories that want to be used as groups.
+    n_quantiles: int
+        number of quantiles per category.
+    subsample: int
+        Maximum number of samples used to estimate the quantiles for computational efficiency.
+    random_state: Any
+        Determines random number generation for subsampling and smoothing noise. Please see ``subsample`` for more details.
+        Pass an int for reproducible results across multiple function calls. See :term:`Glossary  `
+    copy: bool
+        Set to False to perform inplace transformation and avoid a copy (if the input is already a numpy array).
+
+    Example
+    -------
+    >>> from sktools import GroupedQuantileTransformer
+    >>> import pandas as pd
+    >>> X = pd.DataFrame(
+    >>>         {
+    >>>             "price": [1, 2, 3, 3, 2, 10, 0],
+    >>>             "city": ["a", "a", "a", "b", "b", None, None],
+    >>>         }
+    >>>     )
+    >>> featurizer = GroupedQuantileTransformer(feature_mapping={"price": "city"})
+    >>> print(featurizer.fit_transform(X).columns)
+    Index(['price', 'city', 'price_quantile_city'], dtype='object')
+
     """
 
     def __init__(
@@ -20,8 +56,6 @@ class GroupedQuantileTransformer(BaseEstimator, TransformerMixin):
         feature_mapping,
         handle_missing="value",
         n_quantiles=1000,
-        output_distribution="uniform",
-        ignore_implicit_zeros=False,
         subsample=int(1e5),
         random_state=None,
         copy=True,
@@ -30,8 +64,6 @@ class GroupedQuantileTransformer(BaseEstimator, TransformerMixin):
         self.feature_mapping = feature_mapping
         self.transformers = None
         self.n_quantiles = n_quantiles
-        self.output_distribution = output_distribution
-        self.ignore_implicit_zeros = ignore_implicit_zeros
         self.subsample = subsample
         self.random_state = random_state
         self.copy = copy
@@ -52,11 +84,9 @@ class GroupedQuantileTransformer(BaseEstimator, TransformerMixin):
                         category
                     ] = QuantileTransformer(
                         n_quantiles=self.n_quantiles,
-                        output_distribution=self.output_distribution,
-                        ignore_implicit_zeros=self.ignore_implicit_zeros,
                         subsample=self.subsample,
                         random_state=self.random_state,
-                        copy=self.copy
+                        copy=self.copy,
                     )
 
                     x_category = X[X[group] == category]
@@ -68,8 +98,6 @@ class GroupedQuantileTransformer(BaseEstimator, TransformerMixin):
             if self.handle_missing == "value":
                 self.transformer_dict[group][np.nan] = QuantileTransformer(
                     n_quantiles=self.n_quantiles,
-                    output_distribution=self.output_distribution,
-                    ignore_implicit_zeros=self.ignore_implicit_zeros,
                     subsample=self.subsample,
                     random_state=self.random_state,
                     copy=self.copy,
@@ -132,6 +160,49 @@ class GroupedQuantileTransformer(BaseEstimator, TransformerMixin):
 
 
 class PercentileGroupFeaturizer(BaseEstimator, TransformerMixin):
+    """
+        Creates features establishing a relationship between a numeric and a categorical feature,
+        by using a given percentile of the numeric feature in each cateogry.
+
+        For instance, if each datum is an apartment, and we have both the price and the city,
+        if we use the percentile 50 the features model how expensive is an apartment
+        with respect to the median in the city.
+
+        Parameters
+    ----------
+
+    feature_mapping: dict
+        mapping from numeric variables to categories that want to be used as groups.
+    percentile: int
+        percentile used to compute features
+    create_features: bool
+        If false, it just computes percentiles by category
+    handle_missing: str
+        options are 'return_nan' and 'value', defaults to 'value', which uses the global quantile.
+    handle_unknown: str
+        options are 'return_nan' and 'value', defaults to 'value', which uses the global quantile.
+
+    Example
+    -------
+    >>> from sktools import PercentileGroupFeaturizer
+    >>> import pandas as pd
+    >>> X = pd.DataFrame(
+    >>>         {
+    >>>             "price": [1, 2, 3, 3, 2, 10, 0],
+    >>>             "city": ["a", "a", "a", "b", "b", None, None],
+    >>>         }
+    >>>     )
+    >>> featurizer = PercentileGroupFeaturizer(
+    >>>     feature_mapping={"price": "city"}
+    >>> )
+    >>> print(featurizer.fit_transform(X).columns)
+    Index(['price', 'city', 'p50_price_city', 'diff_p50_price_city',
+           'relu_diff_p50_price_city', 'ratio_p50_price_city'],
+          dtype='object')
+
+
+    """
+
     def __init__(
         self,
         feature_mapping,
@@ -211,5 +282,127 @@ class PercentileGroupFeaturizer(BaseEstimator, TransformerMixin):
                 X[diff_name] = X[col] - X[pctl_col_name]
                 X[relu_diff_name] = X[diff_name].clip(0, np.inf)
                 X[ratio_name] = X[col] / X[pctl_col_name]
+
+        return X
+
+
+class MeanGroupFeaturizer(BaseEstimator, TransformerMixin):
+    """
+        Creates features establishing a relationship between a numeric and a categorical feature,
+        by using the mean of the numeric feature in each cateogry.
+
+        For instance, if each datum is an apartment, and we have both the price and the city,
+        the features model how expensive is an apartment with respect to the mean in the city.
+
+        Parameters
+    ----------
+
+    feature_mapping: dict
+        mapping from numeric variables to categories that want to be used as groups.
+    percentile: int
+        percentile used to compute features
+    create_features: bool
+        If false, it just computes percentiles by category
+    handle_missing: str
+        options are 'return_nan' and 'value', defaults to 'value', which uses the global quantile.
+    handle_unknown: str
+        options are 'return_nan' and 'value', defaults to 'value', which uses the global quantile.
+
+    Example
+    -------
+    >>> from sktools import MeanGroupFeaturizer
+    >>> import pandas as pd
+    >>> X = pd.DataFrame(
+    >>>         {
+    >>>             "price": [1, 2, 3, 3, 2, 10, 0],
+    >>>             "city": ["a", "a", "a", "b", "b", None, None],
+    >>>         }
+    >>>     )
+    >>> featurizer = MeanGroupFeaturizer(
+    >>>     feature_mapping={"price": "city"}
+    >>> )
+    >>> print(featurizer.fit_transform(X).columns)
+    Index(['price', 'city', 'mean_price_city', 'diff_mean_price_city',
+           'relu_diff_mean_price_city', 'ratio_mean_price_city'],
+          dtype='object')
+
+
+    """
+
+    def __init__(
+        self,
+        feature_mapping,
+        create_features=True,
+        handle_missing="value",
+        handle_unknown="value",
+    ):
+        self.feature_mapping = feature_mapping
+        self.create_features = create_features
+        self.handle_missing = handle_missing
+        self.handle_unknown = handle_unknown
+        self.saved_mean = {}
+
+    def fit(self, X, y=None):
+
+        for col, group in self.feature_mapping.items():
+
+            mean_col_name = f"mean_{col}_{group}"
+
+            # Create percentile by group
+            mean_df = (
+                X.groupby(group, as_index=False)
+                .agg({col: lambda x: x.mean()})
+                .rename(columns={col: mean_col_name})
+            )
+
+            # Regular handle missing -> add global percentile to missing
+            if self.handle_missing == "value":
+                global_mean = X[col].agg(lambda x: x.mean())
+
+                global_mean_df = pd.DataFrame(
+                    {group: np.nan, mean_col_name: [global_mean]}
+                )
+
+                mean_df = pd.concat([mean_df, global_mean_df])
+
+            self.saved_mean[col] = mean_df
+
+        return self
+
+    def transform(self, X):
+
+        X = X.copy()
+
+        for col, group in self.feature_mapping.items():
+
+            X = X.merge(self.saved_mean[col], on=group, how="left")
+            mean_col_name = f"mean_{col}_{group}"
+
+            # First assign percentiles to non-trivial cases, which are
+            # new categories
+            if (
+                self.handle_unknown == "value"
+                and self.handle_missing == "value"
+            ):
+                groups_fit = self.saved_mean[col][group]
+                new_condition = (~X[group].isin(groups_fit)) & X[
+                    mean_col_name
+                ].isnull()
+
+                x_fit = self.saved_mean[col]
+                imputation = float(
+                    x_fit.loc[x_fit[group].isnull()][mean_col_name]
+                )
+                X.loc[new_condition, mean_col_name] = imputation
+
+            # Then trivially create features
+            if self.create_features:
+                diff_name = f"diff_mean_{col}_{group}"
+                relu_diff_name = f"relu_diff_mean_{col}_{group}"
+                ratio_name = f"ratio_mean_{col}_{group}"
+
+                X[diff_name] = X[col] - X[mean_col_name]
+                X[relu_diff_name] = X[diff_name].clip(0, np.inf)
+                X[ratio_name] = X[col] / X[mean_col_name]
 
         return X

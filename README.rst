@@ -30,10 +30,13 @@ Features include several helpers for sklearn like:
 
 * Selection of columns
 * Sparse to dense matrix conversion
+* Target encoding-like features
+* Quantile featurizers
 
 In addition, there are also methods that are not included in sklearn:
 
 * ``IsEmptyExtractor`` allows to create binary variables indicating if there are missing values.
+
 
 Credits
 -------

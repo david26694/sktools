@@ -33,7 +33,7 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         a list of columns to encode, if None, all string columns will be encoded.
     drop_invariant: bool
         boolean for whether or not to drop encoded columns with 0 variance.
-    parent_dict: dict
+    feature_mapping: dict
         dictionary representing the child - parent relationship. keys are children.
     return_df: bool
         boolean for whether to return a pandas DataFrame from transform (otherwise it will be a numpy array).
@@ -56,40 +56,33 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
 
     Example
     -------
-    >>> from category_encoders import *
+    >>> from sktools import NestedTargetEncoder
     >>> import pandas as pd
-    >>> from sklearn.datasets import load_boston
-    >>> bunch = load_boston()
-    >>> y = bunch.target > 22.5
-    >>> X = pd.DataFrame(bunch.data, columns=bunch.feature_names)
-    >>> enc = NestedTargetEncoder(cols=['CHAS', 'RAD']).fit(X, y)
-    >>> numeric_dataset = enc.transform(X)
-    >>> print(numeric_dataset.info())
-    <class 'pandas.core.frame.DataFrame'>
-    RangeIndex: 506 entries, 0 to 505
-    Data columns (total 13 columns):
-    CRIM       506 non-null float64
-    ZN         506 non-null float64
-    INDUS      506 non-null float64
-    CHAS       506 non-null float64
-    NOX        506 non-null float64
-    RM         506 non-null float64
-    AGE        506 non-null float64
-    DIS        506 non-null float64
-    RAD        506 non-null float64
-    TAX        506 non-null float64
-    PTRATIO    506 non-null float64
-    B          506 non-null float64
-    LSTAT      506 non-null float64
-    dtypes: float64(13)
-    memory usage: 51.5 KB
-    None
+    >>> X = pd.DataFrame(
+    >>>     {
+    >>>         "child": ["a", "a", "b", "b", "b", "c", "c", "d", "d", "d"],
+    >>>         "parent": ["e", "e", "e", "e", "e", "f", "f", "f", "f", "f",]
+    >>>     }
+    >>> )
+    >>> y = pd.Series([1, 2, 3, 1, 2, 4, 4, 5, 4, 4.5])
+    >>> ne = NestedTargetEncoder(feature_mapping={"child": "parent"}, m_prior=0)
+    >>> ne.fit_transform(X, y)
+          child  parent
+    0  2.016667     1.8
+    1  2.016667     1.8
+    2  2.262500     1.8
+    3  2.262500     1.8
+    4  2.262500     1.8
+    5  3.683333     4.3
+    6  3.683333     4.3
+    7  4.137500     4.3
+    8  4.137500     4.3
+    9  4.137500     4.3
 
     References
     ----------
 
-    .. [1] Additive smoothing, from
-    https://en.wikipedia.org/wiki/Additive_smoothing#Generalized_to_the_case_of_known_incidence_rates
+    .. [1] Additive smoothing, from https://en.wikipedia.org/wiki/Additive_smoothing#Generalized_to_the_case_of_known_incidence_rates
 
     """
 
@@ -98,7 +91,7 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         verbose=0,
         cols=None,
         drop_invariant=False,
-        parent_dict={},
+        feature_mapping={},
         return_df=True,
         handle_unknown="value",
         handle_missing="value",
@@ -113,7 +106,7 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         self.drop_invariant = drop_invariant
         self.drop_cols = []
         self.cols = cols
-        self.parent_dict = parent_dict
+        self.feature_mapping = feature_mapping
         self.ordinal_encoder = None
         self._dim = None
         self.mapping = None
@@ -152,7 +145,7 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         """
 
         # Create parent encoder and fit it
-        self.parent_cols = list(self.parent_dict.values())
+        self.parent_cols = list(self.feature_mapping.values())
         self.parent_encoder = MEstimateEncoder(
             verbose=self.verbose,
             cols=self.parent_cols,
@@ -194,8 +187,8 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
                 raise ValueError("Columns to be encoded can not contain null")
 
         # Check that children and parents are disjoint
-        children = set(self.parent_dict.keys())
-        parents = set(self.parent_dict.values())
+        children = set(self.feature_mapping.keys())
+        parents = set(self.feature_mapping.values())
         if len(children.intersection(parents)) > 0:
             raise ValueError("No column should be a child and a parent")
 
@@ -324,7 +317,7 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
 
             # Easy case, the child is not in the child - parent dictionary.
             # We just use the plain m-estimator with the global prior
-            if col not in self.parent_dict:
+            if col not in self.feature_mapping:
                 stats = y.groupby(X[col]).agg(["sum", "count", "mean"])
 
                 estimate = (stats["sum"] + prior * self.m_prior) / (
@@ -333,16 +326,18 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
 
             # Not so easy case, we have to deal with the parent
             else:
-                parent_col = self.parent_dict[col]
+                parent_col = self.feature_mapping[col]
 
                 # Check son-parent unique relation
                 unique_parents = X.groupby([col]).agg({parent_col: "nunique"})[
                     parent_col
                 ]
 
-                if any(unique_parents > 1):
+                more_1_parent = unique_parents[unique_parents > 1]
+
+                if any(unique_parents > 1) and more_1_parent.index >= 0:
                     raise ValueError(
-                        "There are children with more than one parent"
+                        f"There are children with more than one parent, {more_1_parent}"
                     )
 
                 # Get parent stats
@@ -375,7 +370,7 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
                 estimate[:] = prior
 
             # Column doesn't have parent - handle imputation as always
-            if col not in self.parent_dict:
+            if col not in self.feature_mapping:
                 if self.handle_unknown == "return_nan":
                     estimate.loc[-1] = np.nan
                 elif self.handle_unknown == "value":
@@ -404,7 +399,7 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         for col in self.cols:
 
             # Easy case - not having parents (as m estimator)
-            if col not in self.parent_dict:
+            if col not in self.feature_mapping:
                 # Score the column
                 X[col] = X[col].map(self.mapping[col])
 
@@ -416,10 +411,10 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
                 missing = X[col] == -2
 
                 # Apply regular transformation
-                X[col] = X[col].map(self.mapping[col])
+                X[col] = X[col].map(self.mapping[col].drop_duplicates())
 
                 # Impute unknown with parent
-                parent_col = self.parent_dict[col]
+                parent_col = self.feature_mapping[col]
                 if self.handle_unknown == "value":
                     X[col] = X[col].mask(unknown, X_parents[parent_col])
 

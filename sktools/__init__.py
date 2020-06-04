@@ -11,4 +11,5 @@ from .encoders import PercentileEncoder, NestedTargetEncoder
 from .quantilegroups import (
     GroupedQuantileTransformer,
     PercentileGroupFeaturizer,
+    MeanGroupFeaturizer,
 )

@@ -279,7 +279,9 @@ class TestNestedTargetEncoder(unittest.TestCase):
         )
 
         te = sktools.NestedTargetEncoder(
-            cols=self.col, parent_dict=dict(col_1=self.parent_col), m_prior=0
+            cols=self.col,
+            feature_mapping=dict(col_1=self.parent_col),
+            m_prior=0,
         )
         pd.testing.assert_frame_equal(
             te.fit_transform(self.X, self.y), expected_output
@@ -296,7 +298,9 @@ class TestNestedTargetEncoder(unittest.TestCase):
             )
         ).values
 
-        te = sktools.NestedTargetEncoder(cols=0, parent_dict={0: 1}, m_prior=0)
+        te = sktools.NestedTargetEncoder(
+            cols=0, feature_mapping={0: 1}, m_prior=0
+        )
 
         te.fit(self.X_array, self.y)
         output = te.transform(self.X_array).values
@@ -313,7 +317,7 @@ class TestNestedTargetEncoder(unittest.TestCase):
 
         te = sktools.NestedTargetEncoder(
             cols=self.col,
-            parent_dict=dict(col_1=self.parent_col),
+            feature_mapping=dict(col_1=self.parent_col),
             m_prior=0,
             m_parent=0,
         )
@@ -348,7 +352,9 @@ class TestNestedTargetEncoder(unittest.TestCase):
         )
 
         te = sktools.NestedTargetEncoder(
-            cols=self.col, parent_dict=dict(col_1=self.parent_col), m_prior=0
+            cols=self.col,
+            feature_mapping=dict(col_1=self.parent_col),
+            m_prior=0,
         )
 
         te.fit(self.X, self.y)
@@ -385,7 +391,7 @@ class TestNestedTargetEncoder(unittest.TestCase):
 
         te = sktools.NestedTargetEncoder(
             cols=self.col,
-            parent_dict=dict(col_1=self.parent_col),
+            feature_mapping=dict(col_1=self.parent_col),
             m_prior=0,
             handle_missing="value",
             handle_unknown="return_nan",
@@ -408,7 +414,9 @@ class TestNestedTargetEncoder(unittest.TestCase):
         )
 
         te = sktools.NestedTargetEncoder(
-            cols=self.col, parent_dict=dict(col_1=self.parent_col), m_prior=0
+            cols=self.col,
+            feature_mapping=dict(col_1=self.parent_col),
+            m_prior=0,
         )
 
         te.fit(self.X, self.y)
@@ -462,7 +470,7 @@ class TestGroupQuantile(unittest.TestCase):
         pd.testing.assert_frame_equal(transformation, self.new_output)
 
 
-class TestGroupFeaturizer(unittest.TestCase):
+class TestGroupQuantileFeaturizer(unittest.TestCase):
     """Tests for group quantile."""
 
     def setUp(self):
@@ -517,6 +525,64 @@ class TestGroupFeaturizer(unittest.TestCase):
         featurizer = sktools.PercentileGroupFeaturizer(
             feature_mapping={"x": "group"}
         )
+        featurizer.fit(self.X)
+
+        pd.testing.assert_frame_equal(
+            featurizer.transform(self.new_X).iloc[:, 0:3], self.new_output
+        )
+
+
+class TestMeanFeaturizer(unittest.TestCase):
+    """Tests for mean quantile."""
+
+    def setUp(self):
+        """Create dataframe with different column types"""
+        self.X = pd.DataFrame(
+            {
+                "x": [1, 2, 3, 2, 10, 0, 10],
+                "group": ["a", "a", "b", "b", None, None, "c"],
+            }
+        )
+
+        self.new_X = pd.DataFrame(
+            {"x": [1, 2, 3, 4, 5], "group": ["a", "b", "c", "d", None]}
+        )
+
+        self.output = self.X.copy().assign(
+            mean_x_group=[1.5, 1.5, 2.5, 2.5, 4.0, 4.0, 10],
+            diff_mean_x_group=[-0.5, 0.5, 0.5, -0.5, 6, -4, 0],
+            relu_diff_mean_x_group=[0, 0.5, 0.5, 0, 6, 0.0, 0],
+            ratio_mean_x_group=[2.0 / 3, 4.0 / 3, 1.2, 0.8, 10.0 / 4, 0.0, 1.0],
+        )
+
+        self.new_output = self.new_X.copy().assign(
+            mean_x_group=[1.5, 2.5, 10, 4.0, 4.0]
+        )
+
+        self.missing_output = self.X.copy().assign(
+            mean_x_group=[1.5, 1.5, 2.5, 2.5, None, None, 10],
+            diff_mean_x_group=[-0.5, 0.5, 0.5, -0.5, None, None, 0],
+        )
+
+    def test_basic_featurizer(self):
+        featurizer = sktools.MeanGroupFeaturizer(feature_mapping={"x": "group"})
+
+        featurizer.fit(self.X)
+
+        pd.testing.assert_frame_equal(featurizer.transform(self.X), self.output)
+
+    def test_missing(self):
+        featurizer = sktools.MeanGroupFeaturizer(
+            feature_mapping={"x": "group"}, handle_missing="return_nan"
+        )
+        featurizer.fit(self.X)
+
+        pd.testing.assert_frame_equal(
+            featurizer.transform(self.X).iloc[:, :4], self.missing_output
+        )
+
+    def test_new_input(self):
+        featurizer = sktools.MeanGroupFeaturizer(feature_mapping={"x": "group"})
         featurizer.fit(self.X)
 
         pd.testing.assert_frame_equal(
