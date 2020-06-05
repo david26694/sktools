@@ -1,5 +1,3 @@
-"""Main module."""
-
 import pandas as pd
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -9,19 +7,38 @@ class IsEmptyExtractor(BaseEstimator, TransformerMixin):
     """
     Transformer that adds columns indicating wether columns have NaN values
     in a row
+
+    Parameters
+    ----------
+    keep_trivial:
+        If a column doesn't have NaN, don't add the column
+    cols:
+        List of columns to transform. If None, all columns are transformed.
+        It only works if input is a DataFrame
+    Example
+    -------
+    >>> from sktools import IsEmptyExtractor
+    >>> import pandas as pd
+    >>> import numpy as np
+    >>> X = pd.DataFrame(
+    >>>     {
+    >>>         "x": ["a", "b", np.nan],
+    >>>         "y": ["c", np.nan, "d"]
+    >>>     }
+    >>> )
+    >>> IsEmptyExtractor().fit_transform(X)
+         x    y   x_na   y_na
+    0    a    c  False  False
+    1    b  NaN  False   True
+    2  NaN    d   True  False
+
+
     """
 
-    def __init__(self, keep_trivial=False, selected_columns=None):
-        """
+    def __init__(self, keep_trivial=False, cols=None):
 
-        @param keep_trivial: If a column doesn't have NaN, don't add the
-        @param selected_columns: List of columns to transform. If None,
-        all columns are transformed. It only makes sense in the data frame case
-
-        column
-        """
         self.keep_trivial = keep_trivial
-        self.selected_columns = selected_columns
+        self.cols = cols
 
     def fit(self, X, y=None):
         return self
@@ -29,17 +46,14 @@ class IsEmptyExtractor(BaseEstimator, TransformerMixin):
     def transform_data_frame(self, X):
         """
         Transform method in case of receiving a pandas data frame
-
-        @param X: pd.DataFrame to transform
-        @return: Transformed data frame
         """
 
         new_x = X.copy()
 
-        if self.selected_columns is None:
+        if self.cols is None:
             selected_columns = X.columns
         else:
-            selected_columns = self.selected_columns
+            selected_columns = self.cols
 
         for column in selected_columns:
 
@@ -55,9 +69,6 @@ class IsEmptyExtractor(BaseEstimator, TransformerMixin):
     def transform(self, X):
         """
         For each column, it creates a new one indicating if that column is na
-
-        @param X: pd.DataFrame or numpy array to transform
-        @return: New object with more columns in case there are NA
         """
 
         assert isinstance(X, pd.DataFrame) or isinstance(X, np.ndarray)
