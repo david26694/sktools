@@ -47,7 +47,7 @@ class IsEmptyExtractor(BaseEstimator, TransformerMixin):
 
             is_na = X[column].isna()
 
-            if any(is_na == True) or self.keep_trivial:
+            if any(is_na) or self.keep_trivial:
                 new_x[new_column_name] = is_na
 
         return new_x
