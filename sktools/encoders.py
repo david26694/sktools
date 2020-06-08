@@ -11,7 +11,7 @@ from sklearn.utils.random import check_random_state
 
 """Nested target encoder"""
 
-__author__ = "david26694 & cmougan"
+__author__ = "david26694","cmougan"
 
 
 class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
