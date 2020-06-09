@@ -1,5 +1,3 @@
-"""Main module."""
-
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 
@@ -14,6 +12,25 @@ class TypeSelector(BaseEstimator, TransformerMixin):
     ----------
     dtype : required
         The type we want to filter
+
+    Example
+    -------
+    >>> from sktools import TypeSelector
+    >>> import pandas as pd
+    >>> X = pd.DataFrame(
+    >>>         {
+    >>>             "price": [1., 2., 3.],
+    >>>             "city": ["a", "a", "b"]
+    >>>         }
+    >>>     )
+    >>> selector = TypeSelector(
+    >>>     dtype='float'
+    >>> )
+    >>> print(selector.fit_transform(X))
+        price
+    0    1.0
+    1    2.0
+    2    3.0
     """
 
     def __init__(self, dtype):

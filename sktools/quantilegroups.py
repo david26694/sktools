@@ -168,7 +168,7 @@ class PercentileGroupFeaturizer(BaseEstimator, TransformerMixin):
         if we use the percentile 50 the features model how expensive is an apartment
         with respect to the median in the city.
 
-        Parameters
+    Parameters
     ----------
 
     feature_mapping: dict
@@ -294,7 +294,7 @@ class MeanGroupFeaturizer(BaseEstimator, TransformerMixin):
         For instance, if each datum is an apartment, and we have both the price and the city,
         the features model how expensive is an apartment with respect to the mean in the city.
 
-        Parameters
+    Parameters
     ----------
 
     feature_mapping: dict
