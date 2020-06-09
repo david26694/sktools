@@ -93,7 +93,7 @@ html_theme_path = ["_themes", ]
 # documentation.
 #
 html_theme_options = {
-    'navigation_depth': 2
+    'navigation_depth': 4
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
