@@ -18,24 +18,49 @@ sktools
 
 Tools to extend sklearn
 
-
 * Free software: MIT license
-* Documentation: https://sktools.readthedocs.io.
+* Documentation: https://sktools.readthedocs.io
+
+
+Usage
+-----
+
+.. code-block:: python
+
+  from sktools import IsEmptyExtractor
+
+  from sklearn.linear_model import LogisticRegression
+  from sklearn.pipeline import Pipeline
+
+  ...
+
+  mod = Pipeline([
+      ("impute-features", IsEmptyExtractor),
+      ("model", LogisticRegression())
+  ])
+
+  ...
+
+
+
+
 
 
 Features
 --------
 
-Features include several helpers for sklearn like:
+Here's a list of features that sktools currently offers:
 
-* Selection of columns
-* Sparse to dense matrix conversion
-* Target encoding-like features
-* Quantile featurizers
+* ``sktools.encoders.NestedTargetEncoder`` performs target encoding suited for variables with nesting.
+* ``sktools.encoders.PercentileEncoder`` performs target aggregation using a quantile instead of the mean.
+* ``sktools.impute.IsEmptyExtractor`` creates binary variables indicating if there are missing values.
+* ``sktools.matrix_denser.MatrixDenser`` transformer that converts sparse matrices to dense.
+* ``sktools.quantilegroups.GroupedQuantileTransformer`` creates quantiles of a feature by group.
+* ``sktools.quantilegroups.PercentileGroupFeaturizer`` creates features regarding how an instance compares with a quantile of its group.
+* ``sktools.quantilegroups.MeanGroupFeaturizer`` creates features regarding how an instance compares with the mean of its group.
+* ``sktools.selectors.TypeSelector`` gets variables matching a type.
+* ``sktools.selectors.ItemsSelector`` allows to manually choose some variables.
 
-In addition, there are also methods that are not included in sklearn:
-
-* ``IsEmptyExtractor`` allows to create binary variables indicating if there are missing values.
 
 
 Credits
