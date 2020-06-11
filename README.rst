@@ -35,7 +35,7 @@ Usage
   ...
 
   mod = Pipeline([
-      ("impute-features", IsEmptyExtractor),
+      ("impute-features", IsEmptyExtractor()),
       ("model", LogisticRegression())
   ])
 
