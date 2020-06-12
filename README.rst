@@ -13,13 +13,22 @@ sktools
         :target: https://sktools.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
+sktools provides tools to extend sklearn, like several feature engineering based transformers.
+
+Installation
+------------
+
+To install sktools, run this command in your terminal:
+
+.. code-block:: console
+
+    $ pip install sktools
 
 
+Documentation
+-------------
 
-Tools to extend sklearn
-
-* Free software: MIT license
-* Documentation: https://sktools.readthedocs.io
+Can be found in https://sktools.readthedocs.io
 
 
 Usage
@@ -43,9 +52,6 @@ Usage
 
 
 
-
-
-
 Features
 --------
 
@@ -61,6 +67,11 @@ Here's a list of features that sktools currently offers:
 * ``sktools.selectors.TypeSelector`` gets variables matching a type.
 * ``sktools.selectors.ItemsSelector`` allows to manually choose some variables.
 
+
+License
+-------
+
+MIT license
 
 
 Credits

@@ -441,7 +441,7 @@ class TestGroupQuantile(unittest.TestCase):
 
         # TODO: only 1 class should give .5 -> smoothing?
         self.output = self.X.copy().assign(
-            x_quantile_group=[0.0, 1, 1, 0, 1, 0, 0.]
+            x_quantile_group=[0.0, 1, 1, 0, 1, 0, 0.0]
         )
         self.new_output = self.new_X.copy().assign(x_quantile_group=[1.0])
 
