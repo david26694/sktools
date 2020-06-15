@@ -13,3 +13,4 @@ from .quantilegroups import (
     PercentileGroupFeaturizer,
     MeanGroupFeaturizer,
 )
+from .model_selection import BootstrapKFold
