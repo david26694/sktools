@@ -13,3 +13,5 @@ from .quantilegroups import (
     PercentileGroupFeaturizer,
     MeanGroupFeaturizer,
 )
+
+from .linear_model import QuantileRegression
