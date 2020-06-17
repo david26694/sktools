@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""Tests for `sktools` package."""
+"""Tests for ensemble module."""
 
 import unittest
 
@@ -10,7 +10,7 @@ import numpy as np
 
 
 class TestMedianForest(unittest.TestCase):
-    """Tests for type selector."""
+    """Tests for median forest."""
 
     def setUp(self):
         """Load boston data"""

@@ -2,7 +2,6 @@ import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 
 
-
 class MedianForestRegressor:
     """Random forest with median aggregation
 

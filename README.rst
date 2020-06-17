@@ -67,6 +67,7 @@ Here's a list of features that sktools currently offers:
 * ``sktools.selectors.TypeSelector`` gets variables matching a type.
 * ``sktools.selectors.ItemsSelector`` allows to manually choose some variables.
 * ``sktools.ensemble.MedianForestRegressor`` applies the median instead of the mean when aggregating trees predictions.
+* ``sktools.linear_model.QuantileRegression`` sklearn style wrapper for quantile regression.
 
 
 License
