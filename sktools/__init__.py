@@ -13,4 +13,6 @@ from .quantilegroups import (
     PercentileGroupFeaturizer,
     MeanGroupFeaturizer,
 )
+from .linear_model import QuantileRegression
+from .ensemble import MedianForestRegressor
 from .model_selection import BootstrapKFold
