@@ -66,6 +66,7 @@ Here's a list of features that sktools currently offers:
 * ``sktools.quantilegroups.MeanGroupFeaturizer`` creates features regarding how an instance compares with the mean of its group.
 * ``sktools.selectors.TypeSelector`` gets variables matching a type.
 * ``sktools.selectors.ItemsSelector`` allows to manually choose some variables.
+* ``sktools.ensemble.MedianForestRegressor`` applies the median instead of the mean when aggregating trees predictions.
 
 
 License
