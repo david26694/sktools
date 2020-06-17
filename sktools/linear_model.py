@@ -9,6 +9,14 @@ class QuantileRegression:
         self.regressor = None
         self.regressor_fit = None
 
+    def preprocess(self, X):
+
+        X = X.copy()
+        if self.add_intercept:
+            X = sm.add_constant(X)
+        return X
+
+
     def fit(self, X, y):
 
         X = self.preprocess(X)
@@ -22,9 +30,3 @@ class QuantileRegression:
 
         return self.regressor_fit.predict(X)
 
-    def preprocess(self, X):
-
-        X = X.copy()
-        if self.add_intercept:
-            X = sm.add_constant(X)
-        return X
