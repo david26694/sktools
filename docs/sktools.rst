@@ -12,6 +12,14 @@ sktools.encoders module
     :undoc-members:
     :show-inheritance:
 
+sktools.ensemble module
+-----------------------
+
+.. automodule:: sktools.ensemble
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 sktools.imputer module
 ----------------------
 
