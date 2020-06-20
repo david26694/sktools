@@ -185,7 +185,7 @@ class TestQuantileEncoder(unittest.TestCase):
         )
 
         pd.testing.assert_frame_equal(
-            sktools.QuantileEncoder(quantile=0.1, m=0.).fit_transform(
+            sktools.QuantileEncoder(quantile=1, m=0.).fit_transform(
                 self.df, self.target
             ),
             expected_output_max,
