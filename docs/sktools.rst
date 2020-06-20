@@ -28,10 +28,26 @@ sktools.imputer module
     :undoc-members:
     :show-inheritance:
 
+sktools.linear\_model module
+----------------------------
+
+.. automodule:: sktools.linear_model
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 sktools.matrix\_denser module
 -----------------------------
 
 .. automodule:: sktools.matrix_denser
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+sktools.model\_selection module
+-------------------------------
+
+.. automodule:: sktools.model_selection
     :members:
     :undoc-members:
     :show-inheritance:
