@@ -10,7 +10,8 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = ['scikit-learn', 'pandas', 'scipy', 'numpy', 'category_encoders']
+requirements = ['scikit-learn', 'pandas', 'scipy', 'numpy', 'category_encoders',
+                'statsmodels']
 
 setup_requirements = [ ]
 
@@ -43,6 +44,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/david26694/sktools',
-    version='0.1.0',
+    version='0.1.1',
     zip_safe=False,
 )

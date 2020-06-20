@@ -116,5 +116,10 @@ dirty_tests
 # Take out ALL csv
 *.csv
 
+setup_cmds.txt
+
+notebooks/
+
 # carlos testing
 CARLOS_TEST
+

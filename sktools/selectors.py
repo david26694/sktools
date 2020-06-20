@@ -1,5 +1,3 @@
-"""Main module."""
-
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 
@@ -14,6 +12,25 @@ class TypeSelector(BaseEstimator, TransformerMixin):
     ----------
     dtype : required
         The type we want to filter
+
+    Example
+    -------
+    >>> from sktools import TypeSelector
+    >>> import pandas as pd
+    >>> X = pd.DataFrame(
+    >>>         {
+    >>>             "price": [1., 2., 3.],
+    >>>             "city": ["a", "a", "b"]
+    >>>         }
+    >>>     )
+    >>> selector = TypeSelector(
+    >>>     dtype='float'
+    >>> )
+    >>> print(selector.fit_transform(X))
+        price
+    0    1.0
+    1    2.0
+    2    3.0
     """
 
     def __init__(self, dtype):
@@ -33,7 +50,7 @@ class ItemSelector(BaseEstimator, TransformerMixin):
     The data is expected to be stored in a 2D data structure, where the first
     index is over features and the second is over samples.  i.e.
 
-    >> len(data[key]) == n_samples
+    >>> len(data[key]) == n_samples
 
     Please note that this is the opposite convention to scikit-learn feature
     matrices (where the first index corresponds to sample).
@@ -42,10 +59,10 @@ class ItemSelector(BaseEstimator, TransformerMixin):
     (data[key]).  Examples include: a dict of lists, 2D numpy array, Pandas
     DataFrame, numpy record array, etc.
 
-    >> data = {'a': [1, 5, 2, 5, 2, 8],
-               'b': [9, 4, 1, 4, 1, 3]}
-    >> ds = ItemSelector(key='a')
-    >> data['a'] == ds.transform(data)
+    >>> data = {'a': [1, 5, 2, 5, 2, 8],
+                'b': [9, 4, 1, 4, 1, 3]}
+    >>> ds = ItemSelector(key='a')
+    >>> data['a'] == ds.transform(data)
 
     ItemSelector is not designed to handle data grouped by sample.  (e.g. a
     list of dicts).  If your data is structured this way, consider a
