@@ -143,7 +143,7 @@ class TestEmptyExtractor(unittest.TestCase):
         )
 
 
-class TestPercentileEncoder(unittest.TestCase):
+class TestQuantileEncoder(unittest.TestCase):
     """Tests for percentile encoder."""
 
     def setUp(self):
@@ -167,7 +167,7 @@ class TestPercentileEncoder(unittest.TestCase):
         )
 
         pd.testing.assert_frame_equal(
-            sktools.PercentileEncoder(percentile=50).fit_transform(
+            sktools.QuantileEncoder(quantile=0.5, m=0.).fit_transform(
                 self.df, self.target
             ),
             expected_output_median,
@@ -185,7 +185,7 @@ class TestPercentileEncoder(unittest.TestCase):
         )
 
         pd.testing.assert_frame_equal(
-            sktools.PercentileEncoder(percentile=100).fit_transform(
+            sktools.QuantileEncoder(quantile=1, m=0.).fit_transform(
                 self.df, self.target
             ),
             expected_output_max,
@@ -196,7 +196,7 @@ class TestPercentileEncoder(unittest.TestCase):
         The global median of the target is 3. If new categories are passed to
         the transformer, then the output should be 3
         """
-        transformer_median = sktools.PercentileEncoder(percentile=50)
+        transformer_median = sktools.QuantileEncoder(quantile=0.5, m=0.)
         transformer_median.fit(self.df, self.target)
 
         new_df = pd.DataFrame({"categories": ["d", "e"]})
