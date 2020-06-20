@@ -7,7 +7,7 @@ __version__ = "0.1.0"
 from .selectors import TypeSelector, ItemSelector
 from .matrix_denser import MatrixDenser
 from .imputer import IsEmptyExtractor
-from .encoders import PercentileEncoder, NestedTargetEncoder
+from .encoders import QuantileEncoder, NestedTargetEncoder
 from .quantilegroups import (
     GroupedQuantileTransformer,
     PercentileGroupFeaturizer,

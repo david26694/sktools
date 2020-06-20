@@ -44,10 +44,10 @@ sktools.matrix\_denser module
     :undoc-members:
     :show-inheritance:
 
-sktools.model\_selection module
--------------------------------
+sktools.nested\_te module
+-------------------------
 
-.. automodule:: sktools.model_selection
+.. automodule:: sktools.nested_te
     :members:
     :undoc-members:
     :show-inheritance:

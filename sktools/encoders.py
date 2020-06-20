@@ -455,22 +455,24 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
 __author__ = "cmougan & david26694"
 
 
-class PercentileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
-    """Percentile Encoding for categorical features.
+class QuantileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
+    """Quantile Encoding for categorical features.
 
-    For the case of categorical target: features are replaced with a blend of
-    posterior percentile of the target given particular categorical value and
-    the prior probability of the target over all the training data.
 
-    For the case of continuous target: features are replaced with a blend of the
-    expected value of the target given particular categorical value and the
-    expected value of the target over all the training data.
+    This a statistically modified version of target MEstimate encoder where selected features
+    are replaced the statistical quantile instead than the mean. Replacing with the
+    median is a particular case where self.quantile = 0.5. In comparison to MEstimateEncoder
+    it has two tunable parameter `m` and `quantile`
 
     Parameters
     ----------
 
     verbose: int
         integer indicating verbosity of the output. 0 for none.
+    quantile: int
+        integer indicating statistical quantile. ´0.5´ for median.
+    m: int
+        integer indicating the smoothing parameter. 0 for no smoothing.
     cols: list
         a list of columns to encode, if None, all string columns will be encoded.
     drop_invariant: bool
@@ -478,9 +480,9 @@ class PercentileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
     return_df: bool
         boolean for whether to return a pandas DataFrame from transform (otherwise it will be a numpy array).
     handle_missing: str
-        options are 'error', 'return_nan'  and 'value', defaults to 'value', which returns the target percentile.
+        options are 'error', 'return_nan'  and 'value', defaults to 'value', which returns the target quantile.
     handle_unknown: str
-        options are 'error', 'return_nan' and 'value', defaults to 'value', which returns the target percentile.
+        options are 'error', 'return_nan' and 'value', defaults to 'value', which returns the target quantile.
 
     Example
     -------
@@ -490,7 +492,7 @@ class PercentileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
     >>> bunch = load_boston()
     >>> y = bunch.target
     >>> X = pd.DataFrame(bunch.data, columns=bunch.feature_names)
-    >>> enc = PercentileEncoder(cols=['CHAS', 'RAD']).fit(X, y)
+    >>> enc = QuantileEncoder(cols=['CHAS', 'RAD']).fit(X, y)
     >>> numeric_dataset = enc.transform(X)
     >>> print(numeric_dataset.info())
     <class 'pandas.core.frame.DataFrame'>
@@ -515,6 +517,13 @@ class PercentileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
 
     References
     ----------
+    .. [1] A Preprocessing Scheme for High-Cardinality Categorical Attributes in Classification and Prediction Problems, equation 7, from https://dl.acm.org/citation.cfm?id=507538
+
+    .. [2] On estimating probabilities in tree pruning, equation 1, from https://link.springer.com/chapter/10.1007/BFb0017010
+
+    .. [3] Additive smoothing, from https://en.wikipedia.org/wiki/Additive_smoothing#Generalized_to_the_case_of_known_incidence_rates
+
+    .. [4] Target encoding done the right way https://maxhalford.github.io/blog/target-encoding/
 
     """
 
@@ -526,7 +535,8 @@ class PercentileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         return_df=True,
         handle_missing="value",
         handle_unknown="value",
-        percentile=50,
+        quantile=50,
+        m=1.0,
     ):
         self.return_df = return_df
         self.drop_invariant = drop_invariant
@@ -538,9 +548,9 @@ class PercentileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         self.mapping = None
         self.handle_unknown = handle_unknown
         self.handle_missing = handle_missing
-        self._percentile = None
         self.feature_names = None
-        self.percentile = percentile
+        self.quantile = quantile
+        self.m = m
 
     def fit(self, X, y, **kwargs):
         """Fit encoder according to X and y.
@@ -593,7 +603,7 @@ class PercentileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         )
         self.ordinal_encoder = self.ordinal_encoder.fit(X)
         X_ordinal = self.ordinal_encoder.transform(X)
-        self.mapping = self.fit_percentile_encoding(X_ordinal, y)
+        self.mapping = self.fit_quantile_encoding(X_ordinal, y)
 
         X_temp = self.transform(X, override_return_df=True)
         self.feature_names = list(X_temp.columns)
@@ -616,32 +626,40 @@ class PercentileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
 
         return self
 
-    def fit_percentile_encoding(self, X, y):
+    def fit_quantile_encoding(self, X, y):
         mapping = {}
+
+        # Calculate global statistics
+        prior = self._quantile = np.quantile(y, self.quantile)
+        self._sum = y.sum()
+        self._count = y.count()
 
         for switch in self.ordinal_encoder.category_mapping:
             col = switch.get("col")
             values = switch.get("mapping")
 
-            prior = self._percentile = np.percentile(y, self.percentile)
+            # Calculate sum, count and quantile of the target for each unique value in the feature col
+            stats = y.groupby(X[col]).agg(
+                [lambda x: np.quantile(x, self.quantile), "sum", "count"]
+            )
+            stats.columns = ["quantile", "sum", "count"]
 
-            stats = y.groupby(X[col]).apply(
-                lambda x: np.percentile(x, self.percentile)
+            # Calculate the m-probability estimate of the quantile
+            estimate = (stats["count"] * stats["quantile"] + prior * self.m) / (
+                stats["count"] + self.m
             )
 
-            smoothing = stats
-
             if self.handle_unknown == "return_nan":
-                smoothing.loc[-1] = np.nan
+                estimate.loc[-1] = np.nan
             elif self.handle_unknown == "value":
-                smoothing.loc[-1] = prior
+                estimate.loc[-1] = prior
 
             if self.handle_missing == "return_nan":
-                smoothing.loc[values.loc[np.nan]] = np.nan
+                estimate.loc[values.loc[np.nan]] = np.nan
             elif self.handle_missing == "value":
-                smoothing.loc[-2] = prior
+                estimate.loc[-2] = prior
 
-            mapping[col] = smoothing
+            mapping[col] = estimate
 
         return mapping
 
@@ -701,7 +719,7 @@ class PercentileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
             if X[self.cols].isin([-1]).any().any():
                 raise ValueError("Unexpected categories found in dataframe")
 
-        X = self.percentile_encode(X)
+        X = self.quantile_encode(X)
 
         if self.drop_invariant:
             for col in self.drop_cols:
@@ -712,7 +730,7 @@ class PercentileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         else:
             return X.values
 
-    def percentile_encode(self, X_in):
+    def quantile_encode(self, X_in):
         X = X_in.copy(deep=True)
 
         for col in self.cols:
