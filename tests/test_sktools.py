@@ -150,8 +150,8 @@ class TestEmptyExtractor(unittest.TestCase):
             self.expected_output
         )
 
-class TestPercentileEncoder(unittest.TestCase):
-    """Tests for percentile encoder."""
+class TestQuantileEncoder(unittest.TestCase):
+    """Tests for quantile encoder."""
 
     def setUp(self):
         """Create dataframe with categories and a target variable"""
@@ -165,7 +165,7 @@ class TestPercentileEncoder(unittest.TestCase):
 
     def test_median_works(self):
         """
-        Expected output of percentile 50 in df:
+        Expected output of quantile 0.5 in df:
             - a median is 4 (a values are 1, 4, 6)
             - b median is 5 (b values are 2, 5, 7)
             - c median is 0 (c values are 0)
@@ -178,7 +178,7 @@ class TestPercentileEncoder(unittest.TestCase):
         )
 
         pd.testing.assert_frame_equal(
-            sktools.PercentileEncoder(percentile=50).fit_transform(
+            sktools.QuantileEncoder(quantile=0.5).fit_transform(
                 self.df, self.target
             ),
             expected_output_median
@@ -186,7 +186,7 @@ class TestPercentileEncoder(unittest.TestCase):
 
     def test_max_works(self):
         """
-        Expected output of percentile 100 in df:
+        Expected output of quantile 1 in df:
             - a max is 6
             - b max is 7
             - c max is 0
@@ -198,7 +198,7 @@ class TestPercentileEncoder(unittest.TestCase):
         )
 
         pd.testing.assert_frame_equal(
-            sktools.PercentileEncoder(percentile=100).fit_transform(
+            sktools.QuantileEncoder(quantile=1).fit_transform(
                 self.df, self.target
             ),
             expected_output_max
@@ -208,7 +208,7 @@ class TestPercentileEncoder(unittest.TestCase):
         """The global median of the target is 3. If new categories are passed to
         the transformer, then the output should be 3
         """
-        transformer_median = sktools.PercentileEncoder(percentile=50)
+        transformer_median = sktools.QuantileEncoder(quantile=0.5)
         transformer_median.fit(
             self.df, self.target
         )

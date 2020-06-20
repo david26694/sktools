@@ -1,32 +1,32 @@
 # coding: utf-8
 
-"""Percentile Encoder"""
+"""quantile Encoder"""
 import numpy as np
 from sklearn.base import BaseEstimator
 from category_encoders.ordinal import OrdinalEncoder
 import category_encoders.utils as util
 
-__author__ = 'cmougan & david26694'
+__author__ = "cmougan & david26694"
 
 
-class PercentileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
-    """Percentile Encoding for categorical features.
+class QuantileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
+    """Quantile Encoding for categorical features.
 
 
     This a statistically modified version of target MEstimate encoder where selected features
-    are replaced the statistical percentile instead than the mean. Replacing with the 
-    median is a particular case where self.percentile = 0.5. In comparison to MEstimateEncoder
-    it has two tunable parameter `m` and `percentile`
+    are replaced the statistical quantile instead than the mean. Replacing with the 
+    median is a particular case where self.quantile = 0.5. In comparison to MEstimateEncoder
+    it has two tunable parameter `m` and `quantile`
 
     Parameters
     ----------
 
     verbose: int
         integer indicating verbosity of the output. 0 for none.
-    percentile: int
-         integer indicating statistical percenile. 50 for median.
+    quantile: int
+        integer indicating statistical quantile. ´0.5´ for median.
     m: int
-         integer indicating the smoothing parameter. 0 for no smoothing.
+        integer indicating the smoothing parameter. 0 for no smoothing.
     cols: list        
         a list of columns to encode, if None, all string columns will be encoded.
     drop_invariant: bool
@@ -34,9 +34,9 @@ class PercentileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
     return_df: bool
         boolean for whether to return a pandas DataFrame from transform (otherwise it will be a numpy array).
     handle_missing: str
-        options are 'error', 'return_nan'  and 'value', defaults to 'value', which returns the target percentile.
+        options are 'error', 'return_nan'  and 'value', defaults to 'value', which returns the target quantile.
     handle_unknown: str
-        options are 'error', 'return_nan' and 'value', defaults to 'value', which returns the target percentile.
+        options are 'error', 'return_nan' and 'value', defaults to 'value', which returns the target quantile.
 
     Example
     -------
@@ -46,7 +46,7 @@ class PercentileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
     >>> bunch = load_boston()
     >>> y = bunch.target
     >>> X = pd.DataFrame(bunch.data, columns=bunch.feature_names)
-    >>> enc = PercentileEncoder(cols=['CHAS', 'RAD']).fit(X, y)
+    >>> enc = QuantileEncoder(cols=['CHAS', 'RAD']).fit(X, y)
     >>> numeric_dataset = enc.transform(X)
     >>> print(numeric_dataset.info())
     <class 'pandas.core.frame.DataFrame'>
@@ -85,9 +85,17 @@ class PercentileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
 
     """
 
-    def __init__(self, verbose=0, cols=None, drop_invariant=False,
-                 return_df=True, handle_missing='value',
-                 handle_unknown='value', percentile=50,m=1.0):
+    def __init__(
+        self,
+        verbose=0,
+        cols=None,
+        drop_invariant=False,
+        return_df=True,
+        handle_missing="value",
+        handle_unknown="value",
+        quantile=50,
+        m=1.0,
+    ):
         self.return_df = return_df
         self.drop_invariant = drop_invariant
         self.drop_cols = []
@@ -99,9 +107,8 @@ class PercentileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         self.handle_unknown = handle_unknown
         self.handle_missing = handle_missing
         self.feature_names = None
-        self.percentile = percentile
+        self.quantile = quantile
         self.m = m
-        
 
     def fit(self, X, y, **kwargs):
         """Fit encoder according to X and y.
@@ -126,8 +133,13 @@ class PercentileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         y = util.convert_input_vector(y, X.index)
 
         if X.shape[0] != y.shape[0]:
-            raise ValueError("The length of X is " + str(
-                X.shape[0]) + " but length of y is " + str(y.shape[0]) + ".")
+            raise ValueError(
+                "The length of X is "
+                + str(X.shape[0])
+                + " but length of y is "
+                + str(y.shape[0])
+                + "."
+            )
 
         self._dim = X.shape[1]
 
@@ -137,19 +149,19 @@ class PercentileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         else:
             self.cols = util.convert_cols_to_list(self.cols)
 
-        if self.handle_missing == 'error':
+        if self.handle_missing == "error":
             if X[self.cols].isnull().any().any():
-                raise ValueError('Columns to be encoded can not contain null')
+                raise ValueError("Columns to be encoded can not contain null")
 
         self.ordinal_encoder = OrdinalEncoder(
             verbose=self.verbose,
             cols=self.cols,
-            handle_unknown='value',
-            handle_missing='value'
+            handle_unknown="value",
+            handle_missing="value",
         )
         self.ordinal_encoder = self.ordinal_encoder.fit(X)
         X_ordinal = self.ordinal_encoder.transform(X)
-        self.mapping = self.fit_percentile_encoding(X_ordinal, y)
+        self.mapping = self.fit_quantile_encoding(X_ordinal, y)
 
         X_temp = self.transform(X, override_return_df=True)
         self.feature_names = list(X_temp.columns)
@@ -158,47 +170,51 @@ class PercentileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
             self.drop_cols = []
             X_temp = self.transform(X)
             generated_cols = util.get_generated_cols(X, X_temp, self.cols)
-            self.drop_cols = [x for x in generated_cols if
-                              X_temp[x].var() <= 10e-5]
+            self.drop_cols = [
+                x for x in generated_cols if X_temp[x].var() <= 10e-5
+            ]
             try:
                 [self.feature_names.remove(x) for x in self.drop_cols]
             except KeyError as e:
                 if self.verbose > 0:
-                    print("Could not remove column from feature names."
-                          "Not found in generated cols.\n{}".format(e))
+                    print(
+                        "Could not remove column from feature names."
+                        "Not found in generated cols.\n{}".format(e)
+                    )
 
         return self
-    
 
-
-    def fit_percentile_encoding(self, X, y):
+    def fit_quantile_encoding(self, X, y):
         mapping = {}
 
         # Calculate global statistics
-        prior = self._percentile = np.percentile(y, self.percentile)
+        prior = self._quantile = np.quantile(y, self.quantile)
         self._sum = y.sum()
         self._count = y.count()
-        
+
         for switch in self.ordinal_encoder.category_mapping:
-            col = switch.get('col')
-            values = switch.get('mapping')
- 
-            # Calculate sum, count and percentile of the target for each unique value in the feature col
-            stats = y.groupby(X[col]).agg([lambda x: np.percentile(x, self.percentile),'sum', 'count'])
-            stats.columns = ['percentile','sum','count']
-            
-            # Calculate the m-probability estimate of the percentile
-            estimate = (stats['count'] * stats['percentile'] + prior * self.m) / (stats['count'] + self.m)
+            col = switch.get("col")
+            values = switch.get("mapping")
 
+            # Calculate sum, count and quantile of the target for each unique value in the feature col
+            stats = y.groupby(X[col]).agg(
+                [lambda x: np.quantile(x, self.quantile), "sum", "count"]
+            )
+            stats.columns = ["quantile", "sum", "count"]
 
-            if self.handle_unknown == 'return_nan':
+            # Calculate the m-probability estimate of the quantile
+            estimate = (stats["count"] * stats["quantile"] + prior * self.m) / (
+                stats["count"] + self.m
+            )
+
+            if self.handle_unknown == "return_nan":
                 estimate.loc[-1] = np.nan
-            elif self.handle_unknown == 'value':
+            elif self.handle_unknown == "value":
                 estimate.loc[-1] = prior
 
-            if self.handle_missing == 'return_nan':
+            if self.handle_missing == "return_nan":
                 estimate.loc[values.loc[np.nan]] = np.nan
-            elif self.handle_missing == 'value':
+            elif self.handle_missing == "value":
                 estimate.loc[-2] = prior
 
             mapping[col] = estimate
@@ -221,40 +237,47 @@ class PercentileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
 
         """
 
-        if self.handle_missing == 'error':
+        if self.handle_missing == "error":
             if X[self.cols].isnull().any().any():
-                raise ValueError('Columns to be encoded can not contain null')
+                raise ValueError("Columns to be encoded can not contain null")
 
         if self._dim is None:
             raise ValueError(
-                'Must train encoder before it can be used to transform data.')
+                "Must train encoder before it can be used to transform data."
+            )
 
         # unite the input into pandas types
         X = util.convert_input(X)
 
         # then make sure that it is the right size
         if X.shape[1] != self._dim:
-            raise ValueError('Unexpected input dimension %d, expected %d' % (
-            X.shape[1], self._dim,))
+            raise ValueError(
+                "Unexpected input dimension %d, expected %d"
+                % (X.shape[1], self._dim,)
+            )
 
         # if we are encoding the training data, we have to check the target
         if y is not None:
             y = util.convert_input_vector(y, X.index)
             if X.shape[0] != y.shape[0]:
-                raise ValueError("The length of X is " + str(
-                    X.shape[0]) + " but length of y is " + str(
-                    y.shape[0]) + ".")
+                raise ValueError(
+                    "The length of X is "
+                    + str(X.shape[0])
+                    + " but length of y is "
+                    + str(y.shape[0])
+                    + "."
+                )
 
         if not list(self.cols):
             return X
 
         X = self.ordinal_encoder.transform(X)
 
-        if self.handle_unknown == 'error':
+        if self.handle_unknown == "error":
             if X[self.cols].isin([-1]).any().any():
-                raise ValueError('Unexpected categories found in dataframe')
+                raise ValueError("Unexpected categories found in dataframe")
 
-        X = self.percentile_encode(X)
+        X = self.quantile_encode(X)
 
         if self.drop_invariant:
             for col in self.drop_cols:
@@ -265,7 +288,7 @@ class PercentileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         else:
             return X.values
 
-    def percentile_encode(self, X_in):
+    def quantile_encode(self, X_in):
         X = X_in.copy(deep=True)
 
         for col in self.cols:
@@ -287,7 +310,8 @@ class PercentileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
 
         if not isinstance(self.feature_names, list):
             raise ValueError(
-                'Must fit data first. Affected feature names are not known '
-                'before.')
+                "Must fit data first. Affected feature names are not known "
+                "before."
+            )
         else:
             return self.feature_names

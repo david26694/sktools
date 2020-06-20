@@ -6,7 +6,7 @@ from category_encoders.ordinal import OrdinalEncoder
 import category_encoders.utils as util
 from sklearn.utils.random import check_random_state
 
-__author__ = 'Jan Motl'
+__author__ = "Jan Motl"
 
 
 class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
@@ -85,10 +85,20 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
 
     """
 
-    def __init__(self, verbose=0, cols=None, drop_invariant=False,
-                 parent_dict={}, return_df=True, handle_unknown='value',
-                 handle_missing='value', random_state=None, randomized=False,
-                 sigma=0.05, m=1.0):
+    def __init__(
+        self,
+        verbose=0,
+        cols=None,
+        drop_invariant=False,
+        parent_dict={},
+        return_df=True,
+        handle_unknown="value",
+        handle_missing="value",
+        random_state=None,
+        randomized=False,
+        sigma=0.05,
+        m=1.0,
+    ):
         self.verbose = verbose
         self.return_df = return_df
         self.drop_invariant = drop_invariant
@@ -135,8 +145,13 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
 
         # The lengths must be equal
         if X.shape[0] != y.shape[0]:
-            raise ValueError("The length of X is " + str(
-                X.shape[0]) + " but length of y is " + str(y.shape[0]) + ".")
+            raise ValueError(
+                "The length of X is "
+                + str(X.shape[0])
+                + " but length of y is "
+                + str(y.shape[0])
+                + "."
+            )
 
         self._dim = X.shape[1]
 
@@ -146,15 +161,15 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         else:
             self.cols = util.convert_cols_to_list(self.cols)
 
-        if self.handle_missing == 'error':
+        if self.handle_missing == "error":
             if X[self.cols].isnull().any().any():
-                raise ValueError('Columns to be encoded can not contain null')
+                raise ValueError("Columns to be encoded can not contain null")
 
         self.ordinal_encoder = OrdinalEncoder(
             verbose=self.verbose,
             cols=self.cols,
-            handle_unknown='value',
-            handle_missing='value'
+            handle_unknown="value",
+            handle_missing="value",
         )
         self.ordinal_encoder = self.ordinal_encoder.fit(X)
         X_ordinal = self.ordinal_encoder.transform(X)
@@ -169,14 +184,17 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         if self.drop_invariant:
             self.drop_cols = []
             generated_cols = util.get_generated_cols(X, X_temp, self.cols)
-            self.drop_cols = [x for x in generated_cols if
-                              X_temp[x].var() <= 10e-5]
+            self.drop_cols = [
+                x for x in generated_cols if X_temp[x].var() <= 10e-5
+            ]
             try:
                 [self.feature_names.remove(x) for x in self.drop_cols]
             except KeyError as e:
                 if self.verbose > 0:
-                    print("Could not remove column from feature names."
-                          "Not found in generated cols.\n{}".format(e))
+                    print(
+                        "Could not remove column from feature names."
+                        "Not found in generated cols.\n{}".format(e)
+                    )
         return self
 
     def transform(self, X, y=None, override_return_df=False):
@@ -200,29 +218,36 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
 
         """
 
-        if self.handle_missing == 'error':
+        if self.handle_missing == "error":
             if X[self.cols].isnull().any().any():
-                raise ValueError('Columns to be encoded can not contain null')
+                raise ValueError("Columns to be encoded can not contain null")
 
         if self._dim is None:
             raise ValueError(
-                'Must train encoder before it can be used to transform data.')
+                "Must train encoder before it can be used to transform data."
+            )
 
         # Unite the input into pandas types
         X = util.convert_input(X)
 
         # Then make sure that it is the right size
         if X.shape[1] != self._dim:
-            raise ValueError('Unexpected input dimension %d, expected %d' % (
-                X.shape[1], self._dim,))
+            raise ValueError(
+                "Unexpected input dimension %d, expected %d"
+                % (X.shape[1], self._dim,)
+            )
 
         # If we are encoding the training data, we have to check the target
         if y is not None:
             y = util.convert_input_vector(y, X.index).astype(float)
             if X.shape[0] != y.shape[0]:
-                raise ValueError("The length of X is " + str(
-                    X.shape[0]) + " but length of y is " + str(
-                    y.shape[0]) + ".")
+                raise ValueError(
+                    "The length of X is "
+                    + str(X.shape[0])
+                    + " but length of y is "
+                    + str(y.shape[0])
+                    + "."
+                )
 
         if not list(self.cols):
             return X
@@ -232,9 +257,9 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
 
         X = self.ordinal_encoder.transform(X)
 
-        if self.handle_unknown == 'error':
+        if self.handle_unknown == "error":
             if X[self.cols].isin([-1]).any().any():
-                raise ValueError('Unexpected categories found in dataframe')
+                raise ValueError("Unexpected categories found in dataframe")
 
         # Loop over the columns and replace the nominal values with the numbers
         X = self._score(X, y)
@@ -260,60 +285,64 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         prior = self._sum / self._count
 
         for switch in self.ordinal_encoder.category_mapping:
-            col = switch.get('col')
-            values = switch.get('mapping')
+            col = switch.get("col")
+            values = switch.get("mapping")
 
             # Compute prior statistics
             parent_col = self.parent_dict[col]
             parent_stats = y.groupby(X[parent_col]).agg(
-                ['sum', 'count', 'mean']
+                ["sum", "count", "mean"]
             )
             # parent_stats['mean'] = (parent_stats['sum'] + prior * self.m) / \
             #                        (parent_stats['count'] + self.m)
 
             # TODO: delete
-            #col = 'col'
-            #parent_col = 'parent_col'
-            #X = pd.DataFrame({
+            # col = 'col'
+            # parent_col = 'parent_col'
+            # X = pd.DataFrame({
             #    'col': ['a', 'a', 'b', 'b', 'b', 'c', 'c', 'd', 'd'],
             #    'parent_col': ['e', 'e', 'e', 'e', 'e', 'f', 'f', 'f', 'f']
-            #})
-            #y = pd.Series([1, 2, 3, 1, 2, 4, 4, 5, 4])
+            # })
+            # y = pd.Series([1, 2, 3, 1, 2, 4, 4, 5, 4])
 
             # Check son-parent unique relation
-            unique_parents = X.groupby([col]).agg(
-                {parent_col: 'nunique'}).loc[:, parent_col]
+            unique_parents = (
+                X.groupby([col]).agg({parent_col: "nunique"}).loc[:, parent_col]
+            )
             if any(unique_parents > 1):
-                raise ValueError('There are children with more than one parent')
+                raise ValueError("There are children with more than one parent")
 
             # Calculate sum and count of the target for each unique value in the feature col
-            stats = y.groupby(X[col]).agg(['sum', 'count', 'mean'])
+            stats = y.groupby(X[col]).agg(["sum", "count", "mean"])
 
-            groups = X.groupby([parent_col, col]).size().reset_index().iloc[:,
-                     0:2]
+            groups = (
+                X.groupby([parent_col, col]).size().reset_index().iloc[:, 0:2]
+            )
 
-            stats.merge(groups, how='left', on=col).merge(parent_stats,
-                                                          how='left',
-                                                          on=parent_col,
-                                                          suffixes=(
-                                                              '', '_parent'))
+            stats.merge(groups, how="left", on=col).merge(
+                parent_stats,
+                how="left",
+                on=parent_col,
+                suffixes=("", "_parent"),
+            )
 
             # Calculate the m-probability estimate
-            estimate = (stats['sum'] + stats['mean_parent'] * self.m) / (
-                stats['count'] + self.m)
+            estimate = (stats["sum"] + stats["mean_parent"] * self.m) / (
+                stats["count"] + self.m
+            )
 
             # Ignore unique columns. This helps to prevent overfitting on id-like columns
-            if len(stats['count']) == self._count:
+            if len(stats["count"]) == self._count:
                 estimate[:] = prior
 
-            if self.handle_unknown == 'return_nan':
+            if self.handle_unknown == "return_nan":
                 estimate.loc[-1] = np.nan
-            elif self.handle_unknown == 'value':
+            elif self.handle_unknown == "value":
                 estimate.loc[-1] = prior
 
-            if self.handle_missing == 'return_nan':
+            if self.handle_missing == "return_nan":
                 estimate.loc[values.loc[np.nan]] = np.nan
-            elif self.handle_missing == 'value':
+            elif self.handle_missing == "value":
                 estimate.loc[-2] = prior
 
             # Store the m-probability estimate for transform() function
@@ -329,9 +358,9 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
             # Randomization is meaningful only for training data -> we do it only if y is present
             if self.randomized and y is not None:
                 random_state_generator = check_random_state(self.random_state)
-                X[col] = (X[col] * random_state_generator.normal(1., self.sigma,
-                                                                 X[col].shape[
-                                                                     0]))
+                X[col] = X[col] * random_state_generator.normal(
+                    1.0, self.sigma, X[col].shape[0]
+                )
 
         return X
 
@@ -348,6 +377,7 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         """
         if not isinstance(self.feature_names, list):
             raise ValueError(
-                "Estimator has to be fitted to return feature names.")
+                "Estimator has to be fitted to return feature names."
+            )
         else:
             return self.feature_names
