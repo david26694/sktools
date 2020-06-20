@@ -517,17 +517,13 @@ class QuantileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
 
     References
     ----------
-    .. [1] A Preprocessing Scheme for High-Cardinality Categorical Attributes in Classification and Prediction Problems, equation 7, from
-    https://dl.acm.org/citation.cfm?id=507538
+    .. [1] A Preprocessing Scheme for High-Cardinality Categorical Attributes in Classification and Prediction Problems, equation 7, from https://dl.acm.org/citation.cfm?id=507538
 
-    .. [2] On estimating probabilities in tree pruning, equation 1, from
-    https://link.springer.com/chapter/10.1007/BFb0017010
+    .. [2] On estimating probabilities in tree pruning, equation 1, from https://link.springer.com/chapter/10.1007/BFb0017010
 
-    .. [3] Additive smoothing, from
-    https://en.wikipedia.org/wiki/Additive_smoothing#Generalized_to_the_case_of_known_incidence_rates
+    .. [3] Additive smoothing, from https://en.wikipedia.org/wiki/Additive_smoothing#Generalized_to_the_case_of_known_incidence_rates
 
-    .. [4] Target encoding done the right way,
-    https://maxhalford.github.io/blog/target-encoding/
+    .. [4] Target encoding done the right way https://maxhalford.github.io/blog/target-encoding/
 
     """
 
