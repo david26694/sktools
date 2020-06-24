@@ -15,4 +15,4 @@ from .quantilegroups import (
 )
 from .linear_model import QuantileRegression
 from .ensemble import MedianForestRegressor
-from .model_selection import BootstrapFold
+from .model_selection import BootstrapFold, UnivariateSearchCV
