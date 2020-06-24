@@ -58,7 +58,7 @@ Features
 Here's a list of features that sktools currently offers:
 
 * ``sktools.encoders.NestedTargetEncoder`` performs target encoding suited for variables with nesting.
-* ``sktools.encoders.PercentileEncoder`` performs target aggregation using a quantile instead of the mean.
+* ``sktools.encoders.QuantileEncoder`` performs target aggregation using a quantile instead of the mean.
 * ``sktools.impute.IsEmptyExtractor`` creates binary variables indicating if there are missing values.
 * ``sktools.matrix_denser.MatrixDenser`` transformer that converts sparse matrices to dense.
 * ``sktools.quantilegroups.GroupedQuantileTransformer`` creates quantiles of a feature by group.
