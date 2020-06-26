@@ -757,3 +757,38 @@ class QuantileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
             )
         else:
             return self.feature_names
+
+class SummaryEncoder(BaseEstimator, util.TransformerWithTargetMixin):
+
+    def __init__(self, cols, quantiles):
+
+        self.cols = cols
+        self.quantiles = quantiles
+        self.encoder_list = None
+
+    def fit(self, X, y):
+
+        for quantile in self.quantiles:
+            for col in self.cols:
+                percentile = round(quantile * 100)
+                X[f'{col}_{percentile}'] = X[col]
+
+        encoder_list = []
+        for quantile in self.quantiles:
+            col_names = []
+            for col in self.cols:
+                percentile = round(quantile * 100)
+                col_names.append(f'{col}_{percentile}')
+            enc = QuantileEncoder(cols=col_names, quantile=quantile)
+            enc.fit(X, y)
+            encoder_list.append(encoder_list)
+
+        self.encoder_list = encoder_list
+
+        return self
+
+    def transform(self, X):
+        X_encoded = X.copy()
+        for encoder in self.encoder_list:
+            X_encoded = encoder.transform(X_encoded)
+        return X_encoded
