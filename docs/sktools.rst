@@ -44,6 +44,14 @@ sktools.matrix\_denser module
     :undoc-members:
     :show-inheritance:
 
+sktools.preprocessing module
+----------------------------
+
+.. automodule:: sktools.preprocessing
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 sktools.quantilegroups module
 -----------------------------
 

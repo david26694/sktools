@@ -15,3 +15,4 @@ from .quantilegroups import (
 )
 from .linear_model import QuantileRegression
 from .ensemble import MedianForestRegressor
+from .preprocessing import CyclicFeaturizer
