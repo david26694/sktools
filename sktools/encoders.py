@@ -759,7 +759,7 @@ class QuantileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
             return self.feature_names
 
 
-class SummaryEncoder(BaseEstimator, TransformerWithTargetMixin):
+class SummaryEncoder(BaseEstimator, util.TransformerWithTargetMixin):
     def __init__(self, cols, quantiles, m=1.0):
 
         self.cols = cols
