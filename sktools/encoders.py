@@ -535,7 +535,7 @@ class QuantileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         return_df=True,
         handle_missing="value",
         handle_unknown="value",
-        quantile=50,
+        quantile=0.5,
         m=1.0,
     ):
         self.return_df = return_df

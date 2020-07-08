@@ -52,6 +52,14 @@ sktools.model\_selection module
     :undoc-members:
     :show-inheritance:
 
+sktools.preprocessing module
+----------------------------
+
+.. automodule:: sktools.preprocessing
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 sktools.quantilegroups module
 -----------------------------
 
