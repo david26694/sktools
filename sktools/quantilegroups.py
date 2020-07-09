@@ -1,12 +1,12 @@
+"""Grouped Quantile Featurizer"""
+
+__author__ = "david26694"
+
+
 import pandas as pd
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.preprocessing import QuantileTransformer
-
-
-"""Grouped Quantile Featurizer"""
-
-__author__ = "david26694"
 
 
 class GroupedQuantileTransformer(BaseEstimator, TransformerMixin):
@@ -80,9 +80,7 @@ class GroupedQuantileTransformer(BaseEstimator, TransformerMixin):
                 # Regular case - non-nulls -> create a quantile transformer
                 # and fit it with data in that category
                 if category is not None:
-                    self.transformer_dict[group][
-                        category
-                    ] = QuantileTransformer(
+                    self.transformer_dict[group][category] = QuantileTransformer(
                         n_quantiles=self.n_quantiles,
                         subsample=self.subsample,
                         random_state=self.random_state,
@@ -90,9 +88,7 @@ class GroupedQuantileTransformer(BaseEstimator, TransformerMixin):
                     )
 
                     x_category = X[X[group] == category]
-                    self.transformer_dict[group][category].fit(
-                        x_category.loc[:, [col]]
-                    )
+                    self.transformer_dict[group][category].fit(x_category.loc[:, [col]])
 
             # Non-regular case -> impute missings by taking the whole distribution
             if self.handle_missing == "value":
@@ -104,9 +100,7 @@ class GroupedQuantileTransformer(BaseEstimator, TransformerMixin):
                 )
 
                 x_category = X
-                self.transformer_dict[group][np.nan].fit(
-                    x_category.loc[:, [col]]
-                )
+                self.transformer_dict[group][np.nan].fit(x_category.loc[:, [col]])
 
         return self
 
@@ -134,9 +128,7 @@ class GroupedQuantileTransformer(BaseEstimator, TransformerMixin):
                     transformer = self.transformer_dict[group][category]
                     x_transform = transformer.transform(x_col)
 
-                    X.loc[
-                        X[group] == category, transform_feature_name
-                    ] = x_transform
+                    X.loc[X[group] == category, transform_feature_name] = x_transform
 
                 # New categories or nulls -> use default transformer
                 else:
@@ -147,14 +139,10 @@ class GroupedQuantileTransformer(BaseEstimator, TransformerMixin):
 
                     # Use default transformer
                     transformer = self.transformer_dict[group][np.nan]
-                    x_transform = transformer.transform(
-                        x_category.loc[:, [col]]
-                    )
+                    x_transform = transformer.transform(x_category.loc[:, [col]])
 
                     # Assign to X
-                    X.loc[
-                        other_cats_condition, transform_feature_name
-                    ] = x_transform
+                    X.loc[other_cats_condition, transform_feature_name] = x_transform
 
         return X
 
@@ -233,9 +221,7 @@ class PercentileGroupFeaturizer(BaseEstimator, TransformerMixin):
 
             # Regular handle missing -> add global percentile to missing
             if self.handle_missing == "value":
-                global_pctl = X[col].agg(
-                    lambda x: x.quantile(self.percentile / 100)
-                )
+                global_pctl = X[col].agg(lambda x: x.quantile(self.percentile / 100))
 
                 global_pctl_df = pd.DataFrame(
                     {group: np.nan, pctl_col_name: [global_pctl]}
@@ -258,19 +244,12 @@ class PercentileGroupFeaturizer(BaseEstimator, TransformerMixin):
 
             # First assign percentiles to non-trivial cases, which are
             # new categories
-            if (
-                self.handle_unknown == "value"
-                and self.handle_missing == "value"
-            ):
+            if self.handle_unknown == "value" and self.handle_missing == "value":
                 groups_fit = self.saved_percentiles[col][group]
-                new_condition = (~X[group].isin(groups_fit)) & X[
-                    pctl_col_name
-                ].isnull()
+                new_condition = (~X[group].isin(groups_fit)) & X[pctl_col_name].isnull()
 
                 x_fit = self.saved_percentiles[col]
-                imputation = float(
-                    x_fit.loc[x_fit[group].isnull()][pctl_col_name]
-                )
+                imputation = float(x_fit.loc[x_fit[group].isnull()][pctl_col_name])
                 X.loc[new_condition, pctl_col_name] = imputation
 
             # Then trivially create features
@@ -380,19 +359,12 @@ class MeanGroupFeaturizer(BaseEstimator, TransformerMixin):
 
             # First assign percentiles to non-trivial cases, which are
             # new categories
-            if (
-                self.handle_unknown == "value"
-                and self.handle_missing == "value"
-            ):
+            if self.handle_unknown == "value" and self.handle_missing == "value":
                 groups_fit = self.saved_mean[col][group]
-                new_condition = (~X[group].isin(groups_fit)) & X[
-                    mean_col_name
-                ].isnull()
+                new_condition = (~X[group].isin(groups_fit)) & X[mean_col_name].isnull()
 
                 x_fit = self.saved_mean[col]
-                imputation = float(
-                    x_fit.loc[x_fit[group].isnull()][mean_col_name]
-                )
+                imputation = float(x_fit.loc[x_fit[group].isnull()][mean_col_name])
                 X.loc[new_condition, mean_col_name] = imputation
 
             # Then trivially create features

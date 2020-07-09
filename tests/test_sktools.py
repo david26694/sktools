@@ -99,9 +99,7 @@ class TestMatrixDenser(unittest.TestCase):
             [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype=np.int8
         )
 
-        self.assertTrue(
-            (dense_matrix == expected_dense).all(), "Not all values are 0"
-        )
+        self.assertTrue((dense_matrix == expected_dense).all(), "Not all values are 0")
 
 
 class TestEmptyExtractor(unittest.TestCase):
@@ -158,9 +156,7 @@ class TestGroupQuantile(unittest.TestCase):
         self.new_X = pd.DataFrame({"x": [100.0], "group": ["d"]})
 
         # TODO: only 1 class should give .5 -> smoothing?
-        self.output = self.X.copy().assign(
-            x_quantile_group=[0.0, 1, 1, 0, 1, 0, 0.0]
-        )
+        self.output = self.X.copy().assign(x_quantile_group=[0.0, 1, 1, 0, 1, 0, 0.0])
         self.new_output = self.new_X.copy().assign(x_quantile_group=[1.0])
 
     def test_basic_example(self):
@@ -210,14 +206,10 @@ class TestGroupQuantileFeaturizer(unittest.TestCase):
             diff_p50_x_group=[-0.5, 0.5, 0.5, -0.5, None, None, 0],
         )
 
-        self.new_output = self.new_X.copy().assign(
-            p50_x_group=[1.5, 2.5, 10, 2.0, 2.0]
-        )
+        self.new_output = self.new_X.copy().assign(p50_x_group=[1.5, 2.5, 10, 2.0, 2.0])
 
     def test_basic_featurizer(self):
-        featurizer = sktools.PercentileGroupFeaturizer(
-            feature_mapping={"x": "group"}
-        )
+        featurizer = sktools.PercentileGroupFeaturizer(feature_mapping={"x": "group"})
 
         featurizer.fit(self.X)
 
@@ -234,9 +226,7 @@ class TestGroupQuantileFeaturizer(unittest.TestCase):
         )
 
     def test_new_input(self):
-        featurizer = sktools.PercentileGroupFeaturizer(
-            feature_mapping={"x": "group"}
-        )
+        featurizer = sktools.PercentileGroupFeaturizer(feature_mapping={"x": "group"})
         featurizer.fit(self.X)
 
         pd.testing.assert_frame_equal(

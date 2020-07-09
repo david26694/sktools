@@ -350,4 +350,3 @@ class TestSummaryEncoder(unittest.TestCase):
                 quantile_results[self.col].values,
                 summary_results[f"{self.col}_{percentile}"].values
             )
-

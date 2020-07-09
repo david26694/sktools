@@ -1,12 +1,10 @@
-import pandas as pd
-import numpy as np
-from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.utils import check_array
-
-
 """Cyclic transformer"""
 
 __author__ = "david26694"
+
+import pandas as pd
+import numpy as np
+from sklearn.base import BaseEstimator, TransformerMixin
 
 
 class CyclicFeaturizer(BaseEstimator, TransformerMixin):
@@ -55,9 +53,7 @@ class CyclicFeaturizer(BaseEstimator, TransformerMixin):
         # If the mapping is given, no need to run it
         if self.period_mapping is not None:
             if set(self.cols) != set(self.period_mapping.keys()):
-                raise ValueError(
-                    "Keys of period_mapping are not the same as cols"
-                )
+                raise ValueError("Keys of period_mapping are not the same as cols")
             return self
         else:
             self.period_mapping = {}
@@ -75,7 +71,7 @@ class CyclicFeaturizer(BaseEstimator, TransformerMixin):
         for col in self.cols:
             min_col, max_col = self.period_mapping[col]
             period = max_col - min_col + 1
-            X[f'{col}_sin'] = np.sin(2 * (X[col] - min_col) * np.pi / period)
-            X[f'{col}_cos'] = np.cos(2 * (X[col] - min_col) * np.pi / period)
+            X[f"{col}_sin"] = np.sin(2 * (X[col] - min_col) * np.pi / period)
+            X[f"{col}_cos"] = np.cos(2 * (X[col] - min_col) * np.pi / period)
 
         return X
