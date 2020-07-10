@@ -6,8 +6,8 @@ sktools
 .. image:: https://img.shields.io/pypi/v/sktools.svg
         :target: https://pypi.python.org/pypi/sktools
 
-.. image:: https://img.shields.io/travis/david26694/sktools.svg
-        :target: https://travis-ci.com/david26694/sktools
+.. image:: https://github.com/david26694/sktools/workflows/Unit%20Tests/badge.svg
+        :target: https://github.com/david26694/sktools/actions
 
 .. image:: https://readthedocs.org/projects/sktools/badge/?version=latest
         :target: https://sktools.readthedocs.io/en/latest/?badge=latest
