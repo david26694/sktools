@@ -1,4 +1,6 @@
-# coding: utf-8
+"""Nested target encoder"""
+
+__author__ = "david26694", "cmougan"
 
 
 import numpy as np
@@ -8,10 +10,6 @@ from category_encoders.ordinal import OrdinalEncoder
 from category_encoders.m_estimate import MEstimateEncoder
 import category_encoders.utils as util
 from sklearn.utils.random import check_random_state
-
-"""Nested target encoder"""
-
-__author__ = "david26694", "cmougan"
 
 
 class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
@@ -211,9 +209,7 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         if self.drop_invariant:
             self.drop_cols = []
             generated_cols = util.get_generated_cols(X, X_temp, self.cols)
-            self.drop_cols = [
-                x for x in generated_cols if X_temp[x].var() <= 10e-5
-            ]
+            self.drop_cols = [x for x in generated_cols if X_temp[x].var() <= 10e-5]
             try:
                 [self.feature_names.remove(x) for x in self.drop_cols]
             except KeyError as e:
@@ -260,8 +256,7 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         # Then make sure that it is the right size
         if X.shape[1] != self._dim:
             raise ValueError(
-                "Unexpected input dimension %d, expected %d"
-                % (X.shape[1], self._dim,)
+                "Unexpected input dimension %d, expected %d" % (X.shape[1], self._dim,)
             )
 
         # If we are encoding the training data, we have to check the target
@@ -361,9 +356,9 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
                 stats = stats.set_index(col)
 
                 # Calculate the m-probability estimate using the parent prior
-                estimate = (
-                    stats["sum"] + stats["te_parent"] * self.m_parent
-                ) / (stats["count"] + self.m_parent)
+                estimate = (stats["sum"] + stats["te_parent"] * self.m_parent) / (
+                    stats["count"] + self.m_parent
+                )
 
             # Ignore unique columns. This helps to prevent overfitting on id-like columns
             if len(stats["count"]) == self._count:
@@ -443,16 +438,9 @@ class NestedTargetEncoder(BaseEstimator, util.TransformerWithTargetMixin):
 
         """
         if not isinstance(self.feature_names, list):
-            raise ValueError(
-                "Estimator has to be fitted to return feature names."
-            )
+            raise ValueError("Estimator has to be fitted to return feature names.")
         else:
             return self.feature_names
-
-
-"""Percentile Encoder"""
-
-__author__ = "cmougan & david26694"
 
 
 class QuantileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
@@ -612,9 +600,7 @@ class QuantileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
             self.drop_cols = []
             X_temp = self.transform(X)
             generated_cols = util.get_generated_cols(X, X_temp, self.cols)
-            self.drop_cols = [
-                x for x in generated_cols if X_temp[x].var() <= 10e-5
-            ]
+            self.drop_cols = [x for x in generated_cols if X_temp[x].var() <= 10e-5]
             try:
                 [self.feature_names.remove(x) for x in self.drop_cols]
             except KeyError as e:
@@ -694,8 +680,7 @@ class QuantileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
         # then make sure that it is the right size
         if X.shape[1] != self._dim:
             raise ValueError(
-                "Unexpected input dimension %d, expected %d"
-                % (X.shape[1], self._dim,)
+                "Unexpected input dimension %d, expected %d" % (X.shape[1], self._dim,)
             )
 
         # if we are encoding the training data, we have to check the target
@@ -752,8 +737,7 @@ class QuantileEncoder(BaseEstimator, util.TransformerWithTargetMixin):
 
         if not isinstance(self.feature_names, list):
             raise ValueError(
-                "Must fit data first. Affected feature names are not known "
-                "before."
+                "Must fit data first. Affected feature names are not known " "before."
             )
         else:
             return self.feature_names
