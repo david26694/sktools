@@ -56,6 +56,7 @@ class CyclicFeaturizer(BaseEstimator, TransformerMixin):
                 raise ValueError("Keys of period_mapping are not the same as cols")
             return self
         else:
+            # Learn values to determine periods
             self.period_mapping = {}
             for col in self.cols:
                 min_col = X[col].min()
@@ -70,6 +71,8 @@ class CyclicFeaturizer(BaseEstimator, TransformerMixin):
 
         for col in self.cols:
             min_col, max_col = self.period_mapping[col]
+            # 24 hours -> 23 - 0 + 1
+            # 365 days -> 365 - 1 + 1
             period = max_col - min_col + 1
             X[f"{col}_sin"] = np.sin(2 * (X[col] - min_col) * np.pi / period)
             X[f"{col}_cos"] = np.cos(2 * (X[col] - min_col) * np.pi / period)
