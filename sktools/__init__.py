@@ -11,7 +11,7 @@ from .encoders import QuantileEncoder, NestedTargetEncoder, SummaryEncoder
 from .quantilegroups import (
     GroupedQuantileTransformer,
     PercentileGroupFeaturizer,
-    MeanGroupFeaturizer,
+    MeanGroupFeaturizer
 )
 from .linear_model import QuantileRegression
 from .ensemble import MedianForestRegressor
