@@ -2,6 +2,12 @@
 History
 =======
 
+0.1.3 (2020-07-13)
+------------------
+
+* Bootstrap cross-validation
+* Cyclic featurizer
+
 0.1.2 (2020-06-24)
 ------------------
 
