@@ -2,7 +2,7 @@
 
 __author__ = """David Masip Bonet"""
 __email__ = "david26694@gmail.com"
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 
 from .selectors import TypeSelector, ItemSelector
 from .matrix_denser import MatrixDenser
@@ -11,7 +11,7 @@ from .encoders import QuantileEncoder, NestedTargetEncoder, SummaryEncoder
 from .quantilegroups import (
     GroupedQuantileTransformer,
     PercentileGroupFeaturizer,
-    MeanGroupFeaturizer
+    MeanGroupFeaturizer,
 )
 from .linear_model import QuantileRegression
 from .ensemble import MedianForestRegressor
