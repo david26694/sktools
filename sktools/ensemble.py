@@ -1,7 +1,8 @@
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingClassifier
 from sklearn.preprocessing import OneHotEncoder
-
+from sklearn.base import BaseEstimator, TransformerMixin
+import scipy
 
 class MedianForestRegressor:
     """Random forest with median aggregation
