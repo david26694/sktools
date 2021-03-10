@@ -13,6 +13,9 @@ sktools
         :target: https://sktools.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
+.. image:: https://static.pepy.tech/personalized-badge/sktools?period=total&units=international_system&left_color=black&right_color=brightgreen&left_text=Downloads
+        :target: https://pepy.tech/project/sktools
+
 sktools provides tools to extend sklearn, like several feature engineering based transformers.
 
 Installation
