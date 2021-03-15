@@ -1,6 +1,4 @@
-"""Cyclic transformer"""
-
-__author__ = "david26694"
+__author__ = ["david26694", "cmougan"]
 
 import pandas as pd
 import numpy as np
