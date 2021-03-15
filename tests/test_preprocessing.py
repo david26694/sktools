@@ -76,3 +76,48 @@ class TestCyclicFeaturizer(unittest.TestCase):
             month_sin,
             month_sin_expected
         )
+
+
+
+class TestGBFeatures(unittest.TestCase):
+    """Tests for Gradient Boosting Feature Generator."""
+
+    def setUp(self):
+        """Load boston data"""
+
+        self.boston = load_boston()["data"]
+        self.y = load_boston()["target"]
+        self.y = np.where(self.y > self.y.mean(), 1, 0)
+
+
+    def test_1_tree(self):
+        """
+        For 1 tree, with max_dept = 1, only 4 features should be created
+        [0001],[0010],[0100],[1000]
+        """
+
+        mf = sktools.GradientBoostingFeatureGenerator(sparse_feat=False,max_depth=1,n_estimators=1)
+
+        mf.fit(self.boston, self.y)
+
+        original_shape = self.boston.shape[1]
+        transformed_shape = mf.transform(self.boston).shape[1]
+        dif = transformed_shape - original_shape
+
+        np.testing.assert_equal(dif, 4)
+
+    def test_2_tree(self):
+            """
+            For 2 tree, with max_dept = 1, only 6 features should be created
+            [000001],[000010],[000100],[001000],[010000],[100000]
+            """
+
+            mf = sktools.GradientBoostingFeatureGenerator(sparse_feat=False, max_depth=1, n_estimators=1)
+
+            mf.fit(self.boston, self.y)
+
+            original_shape = self.boston.shape[1]
+            transformed_shape = mf.transform(self.boston).shape[1]
+            dif = transformed_shape - original_shape
+
+            np.testing.assert_equal(dif, 6)
