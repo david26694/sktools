@@ -93,6 +93,7 @@ class GradientBoostingFeatureGenerator(BaseEstimator, TransformerMixin):
     -------
     >>> from sktools.preprocessing import GradientBoostingFeatureGenerator
     >>> from sklearn.datasets import load_boston
+    >>> import numpy as np
     >>> boston = load_boston()['data']
     >>> y = load_boston()['target']
     >>> y = np.where(y>y.mean(),1,0)
