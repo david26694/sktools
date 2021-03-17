@@ -130,6 +130,8 @@ class GradientBoostingFeatureGenerator(BaseEstimator, TransformerMixin):
         self.stack_to_X = stack_to_X
         self.sparse_feat = sparse_feat
         self.add_probs = add_probs
+
+        # Key arguments for the gradient boosting classifier
         self.gbm = GradientBoostingClassifier(**kwargs)
 
     def _get_leaves(self, X):
