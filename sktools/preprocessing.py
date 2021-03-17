@@ -89,6 +89,22 @@ class GradientBoostingFeatureGenerator(BaseEstimator, TransformerMixin):
     We treat each individual tree as a categorical feature that takes as value the index of the leaf an instance ends up falling in
     and then perform one hot encoding for these features.
 
+     Parameters
+    ----------
+    stack_to_X: bool, default = True
+        Generates leaves features using the fitted self.gbm and saves them in R.
+        If 'stack_to_X==True' then '.transform' returns the original features with 'R' appended as columns.
+        If 'stack_to_X==False' then  '.transform' returns only the leaves features from 'R'
+
+    sparse_feat: bool, default = False
+        If 'sparse_feat==True' then the input matrix from 'X' is cast as a sparse matrix as well as the 'R' matrix.
+
+    add_probs: bool, default = True
+        If 'add_probs==True' then the created features are appended a probability [0,1].
+        If 'add_probs==False' features are binary
+
+
+
     Example
     -------
     >>> from sktools.preprocessing import GradientBoostingFeatureGenerator
@@ -108,59 +124,13 @@ class GradientBoostingFeatureGenerator(BaseEstimator, TransformerMixin):
     https://research.fb.com/wp-content/uploads/2016/11/practical-lessons-from-predicting-clicks-on-ads-at-facebook.pdf
     """
 
-    def __init__(
-        self,
-        stack_to_X=True,
-        sparse_feat=False,
-        add_probs=True,
-        criterion="friedman_mse",
-        init=None,
-        learning_rate=0.1,
-        loss="deviance",
-        max_depth=3,
-        max_features=None,
-        max_leaf_nodes=None,
-        min_impurity_decrease=0.0,
-        min_impurity_split=None,
-        min_samples_leaf=1,
-        min_samples_split=2,
-        min_weight_fraction_leaf=0.0,
-        n_estimators=50,
-        n_iter_no_change=None,
-        random_state=None,
-        subsample=1.0,
-        tol=0.0001,
-        validation_fraction=0.1,
-        verbose=0,
-        warm_start=False,
-    ):
+    def __init__(self, stack_to_X=True, sparse_feat=False, add_probs=True, **kwargs):
 
         # Deciding whether to append features or simply return generated features
         self.stack_to_X = stack_to_X
         self.sparse_feat = sparse_feat
         self.add_probs = add_probs
-
-        # GBM hyperparameters
-        self.criterion = criterion
-        self.init = init
-        self.learning_rate = learning_rate
-        self.loss = loss
-        self.max_depth = max_depth
-        self.max_features = max_features
-        self.max_leaf_nodes = max_leaf_nodes
-        self.min_impurity_decrease = min_impurity_decrease
-        self.min_impurity_split = min_impurity_split
-        self.min_samples_leaf = min_samples_leaf
-        self.min_samples_split = min_samples_split
-        self.min_weight_fraction_leaf = min_weight_fraction_leaf
-        self.n_estimators = n_estimators
-        self.n_iter_no_change = n_iter_no_change
-        self.random_state = random_state
-        self.subsample = subsample
-        self.tol = tol
-        self.validation_fraction = validation_fraction
-        self.verbose = verbose
-        self.warm_start = warm_start
+        self.gbm = GradientBoostingClassifier(**kwargs)
 
     def _get_leaves(self, X):
         X_leaves = self.gbm.apply(X)
@@ -177,29 +147,6 @@ class GradientBoostingFeatureGenerator(BaseEstimator, TransformerMixin):
 
     def fit(self, X, y):
 
-        self.gbm = GradientBoostingClassifier(
-            criterion=self.criterion,
-            init=self.init,
-            learning_rate=self.learning_rate,
-            loss=self.loss,
-            max_depth=self.max_depth,
-            max_features=self.max_features,
-            max_leaf_nodes=self.max_leaf_nodes,
-            min_impurity_decrease=self.min_impurity_decrease,
-            min_impurity_split=self.min_impurity_split,
-            min_samples_leaf=self.min_samples_leaf,
-            min_samples_split=self.min_samples_split,
-            min_weight_fraction_leaf=self.min_weight_fraction_leaf,
-            n_estimators=self.n_estimators,
-            n_iter_no_change=self.n_iter_no_change,
-            random_state=self.random_state,
-            subsample=self.subsample,
-            tol=self.tol,
-            validation_fraction=self.validation_fraction,
-            verbose=self.verbose,
-            warm_start=self.warm_start,
-        )
-
         self.gbm.fit(X, y)
         self.encoder = OneHotEncoder(categories="auto")
         X_leaves = self._get_leaves(X)
@@ -207,12 +154,6 @@ class GradientBoostingFeatureGenerator(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X):
-        """
-        Generates leaves features using the fitted self.gbm and saves them in R.
-        If 'self.stack_to_X==True' then '.transform' returns the original features with 'R' appended as columns.
-        If 'self.stack_to_X==False' then  '.transform' returns only the leaves features from 'R'
-        Ìf 'self.sparse_feat==True' then the input matrix from 'X' is cast as a sparse matrix as well as the 'R' matrix.
-        """
         R = self._decode_leaves(self._get_leaves(X))
 
         if self.sparse_feat:
@@ -253,5 +194,4 @@ class GradientBoostingFeatureGenerator(BaseEstimator, TransformerMixin):
                 )
             else:
                 X_new = np.hstack((X, R)) if self.stack_to_X == True else R
-
         return X_new
