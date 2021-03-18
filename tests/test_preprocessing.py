@@ -68,55 +68,81 @@ class TestGBFeatures(unittest.TestCase):
     """Tests for Gradient Boosting Feature Generator."""
 
     def setUp(self):
-        """Load boston data"""
+        """Load data"""
+        from sklearn.datasets import make_classification
 
-        self.boston = load_boston()["data"]
-        self.y = load_boston()["target"]
-        self.y = np.where(self.y > self.y.mean(), 1, 0)
+        X, y = make_classification(n_features=4, n_samples=10_000)
+        self.X = X
+        self.y = y
 
-    def test_1_tree(self):
+    def test_n_estimator(self):
         """
         For 1 tree, with max_dept = 1, only 4 features should be created
         [0001],[0010],[0100],[1000]
         """
 
-        mf = sktools.GradientBoostingFeatureGenerator(
-            sparse_feat=False, max_depth=1, n_estimators=1
-        )
+        for n in [1, 3, 5]:
+            mf = sktools.preprocessing.GradientBoostingFeatureGenerator(
+                sparse_feat=False, max_depth=1, n_estimators=n, add_probs=False
+            )
 
-        mf.fit(self.boston, self.y)
+            mf.fit(self.X, self.y)
 
-        original_shape = self.boston.shape[1]
-        transformed_shape = mf.transform(self.boston).shape[1]
-        dif = transformed_shape - original_shape
+            original_shape = self.X.shape[1]
+            transformed_shape = mf.transform(self.X).shape[1]
+            dif = transformed_shape - original_shape
 
-        np.testing.assert_equal(dif, 4)
-
-    def test_2_tree(self):
-        """
-        For 2 tree, with max_dept = 1, only 6 features should be created
-        [000001],[000010],[000100],[001000],[010000],[100000]
-        """
-
-        mf = sktools.GradientBoostingFeatureGenerator(
-            sparse_feat=False, max_depth=1, n_estimators=1
-        )
-
-        mf.fit(self.boston, self.y)
-
-        original_shape = self.boston.shape[1]
-        transformed_shape = mf.transform(self.boston).shape[1]
-        dif = transformed_shape - original_shape
-
-        np.testing.assert_equal(dif, 6)
+            np.testing.assert_equal(dif, 2 * n)
 
     def test_leaves_shape(self):
         """
         For different estimators size check if the leaves scale together
         """
+
         for n in [1, 3, 4]:
-            mf = sktools.GradientBoostingFeatureGenerator(
+            mf = sktools.preprocessing.GradientBoostingFeatureGenerator(
                 sparse_feat=False, max_depth=1, n_estimators=n
             )
-            mf.fit(self.boston, self.y)
-            np.testing(mf._get_leaves(self.boston), n)
+            mf.fit(self.X, self.y)
+
+            leaves = mf._get_leaves(self.X).shape[1]
+            np.testing.assert_equal(leaves, n)
+
+    def test_proba(self):
+        """
+        Check if probabilites are added as extra colums
+        """
+
+        for n in [1, 3, 5]:
+            mf = sktools.preprocessing.GradientBoostingFeatureGenerator(
+                add_probs=False, n_estimators=n
+            )
+            mf.fit(self.X, self.y)
+            no_prob = mf.transform(self.X).shape[1]
+
+            mf = sktools.preprocessing.GradientBoostingFeatureGenerator(
+                add_probs=True, n_estimators=n
+            )
+            mf.fit(self.X, self.y)
+            prob = mf.transform(self.X).shape[1]
+
+            np.testing.assert_equal(no_prob + 2, prob)
+
+    def test_max_depth(self):
+        """
+        Check if probabilites are added as extra colums
+        """
+        from sklearn.datasets import make_classification
+
+        # Needs more n_samples to be stable
+        X, y = make_classification(n_samples=100_000, n_features=4)
+
+        for n in [1, 2, 3]:
+            mf = sktools.preprocessing.GradientBoostingFeatureGenerator(
+                add_probs=False, n_estimators=1, max_depth=n
+            )
+            mf.fit(X, y)
+            trans = mf.transform(X).shape[1] - 4
+            expected = 2 ** n
+
+            np.testing.assert_equal(trans, expected)
