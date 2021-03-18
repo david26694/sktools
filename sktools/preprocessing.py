@@ -168,7 +168,7 @@ class GradientBoostingFeatureGenerator(BaseEstimator, TransformerMixin):
 
     def fit(self, X, y):
 
-        if self.regression ==False:
+        if self.regression == False:
             # Check that is a classification target
             check_classification_targets(y)
 
