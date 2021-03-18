@@ -2,9 +2,10 @@ __author__ = ["david26694", "cmougan"]
 
 import pandas as pd
 import numpy as np
-from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.utils.multiclass import check_classification_targets
 import scipy
 
 
@@ -108,14 +109,11 @@ class GradientBoostingFeatureGenerator(BaseEstimator, TransformerMixin):
     Example
     -------
     >>> from sktools.preprocessing import GradientBoostingFeatureGenerator
-    >>> from sklearn.datasets import load_boston
-    >>> import numpy as np
-    >>> boston = load_boston()['data']
-    >>> y = load_boston()['target']
-    >>> y = np.where(y>y.mean(),1,0)
+    >>> from sklearn.datasets import make_classification
+    >>> X, y = make_classification(n_samples=80000)
     >>> mf = GradientBoostingFeatureGenerator(sparse_feat=False)
-    >>> mf.fit(boston, y)
-    >>> mf.transform(boston)
+    >>> mf.fit(X, y)
+    >>> mf.transform(X)
 
     References
     ----------
@@ -124,15 +122,28 @@ class GradientBoostingFeatureGenerator(BaseEstimator, TransformerMixin):
     https://research.fb.com/wp-content/uploads/2016/11/practical-lessons-from-predicting-clicks-on-ads-at-facebook.pdf
     """
 
-    def __init__(self, stack_to_X=True, sparse_feat=False, add_probs=True, **kwargs):
+    def __init__(
+        self,
+        stack_to_X=True,
+        sparse_feat=False,
+        add_probs=False,
+        regression=False,
+        **kwargs,
+    ):
 
         # Deciding whether to append features or simply return generated features
         self.stack_to_X = stack_to_X
         self.sparse_feat = sparse_feat
         self.add_probs = add_probs
+        self.regression = regression
 
-        # Key arguments for the gradient boosting classifier
-        self.gbm = GradientBoostingClassifier(**kwargs)
+        if self.regression == True:
+            # Key arguments for the gradient boosting regressor
+            self.gbm = GradientBoostingRegressor(**kwargs)
+
+        else:
+            # Key arguments for the gradient boosting classifier
+            self.gbm = GradientBoostingClassifier(**kwargs)
 
     def _get_leaves(self, X):
         X_leaves = self.gbm.apply(X)
@@ -141,6 +152,14 @@ class GradientBoostingFeatureGenerator(BaseEstimator, TransformerMixin):
 
         return X_leaves
 
+    def _predict_probs(self, X):
+        if self.regression == True:
+            # Key arguments for the gradient boosting regressor
+            return self.gbm.predict(X)
+        else:
+            # Key arguments for the gradient boosting classifier
+            return self.gbm.predict_proba(X)
+
     def _decode_leaves(self, X):
         if self.sparse_feat:
             return scipy.sparse.csr.csr_matrix(self.encoder.transform(X))
@@ -148,6 +167,9 @@ class GradientBoostingFeatureGenerator(BaseEstimator, TransformerMixin):
             return self.encoder.transform(X).todense()
 
     def fit(self, X, y):
+
+        if self.regression ==False:
+            check_classification_targets(y)
 
         self.gbm.fit(X, y)
         self.encoder = OneHotEncoder(categories="auto")
@@ -160,7 +182,7 @@ class GradientBoostingFeatureGenerator(BaseEstimator, TransformerMixin):
 
         if self.sparse_feat:
             if self.add_probs:
-                P = self.gbm.predict_proba(X)
+                P = self._predict_probs(X)
                 X_new = (
                     scipy.sparse.hstack(
                         (
@@ -182,7 +204,10 @@ class GradientBoostingFeatureGenerator(BaseEstimator, TransformerMixin):
         else:
 
             if self.add_probs:
-                P = self.gbm.predict_proba(X)
+                P = self._predict_probs(X)
+                R = np.hstack((R, P))
+                X_new = np.hstack((X, R)) if self.stack_to_X == True else R
+                """
                 X_new = (
                     scipy.sparse.hstack(
                         (
@@ -194,6 +219,7 @@ class GradientBoostingFeatureGenerator(BaseEstimator, TransformerMixin):
                     if self.stack_to_X == True
                     else R
                 )
+                """
             else:
                 X_new = np.hstack((X, R)) if self.stack_to_X == True else R
         return X_new
