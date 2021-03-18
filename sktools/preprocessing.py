@@ -154,7 +154,6 @@ class GradientBoostingFeatureGenerator(BaseEstimator, TransformerMixin):
         else:
             n_rows, n_cols, _ = X_leaves.shape
 
-
         X_leaves = X_leaves.reshape(n_rows, n_cols)
 
         return X_leaves

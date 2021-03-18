@@ -8,6 +8,11 @@ import sktools
 import numpy as np
 import pandas as pd
 
+from sklearn.datasets import make_classification
+import random
+
+random.seed(0)
+
 
 class TestCyclicFeaturizer(unittest.TestCase):
     """Tests for cyclic featurizer."""
@@ -69,19 +74,15 @@ class TestGBFeatures(unittest.TestCase):
 
     def setUp(self):
         """Load data"""
-        from sklearn.datasets import make_classification
-        import random
 
-        random.seed(0)
-
-        X, y = make_classification(n_features=4, n_samples=10_000, random_state=0)
+        X, y = make_classification(n_features=4, n_samples=50_000, random_state=0)
         self.X = X
         self.y = y
 
     def test_n_estimator(self):
         """
-        For 1 tree, with max_dept = 1, only 4 features should be created
-        [0001],[0010],[0100],[1000]
+        For 1 tree, with max_dept = 1, only 2 features should be created
+        [01],[10]
         """
 
         for n in [1, 3, 5]:
@@ -100,6 +101,32 @@ class TestGBFeatures(unittest.TestCase):
             dif = transformed_shape - original_shape
 
             np.testing.assert_equal(dif, 2 * n)
+
+    def test_features(self):
+        """
+        For 1 tree, with max_dept = 1, only 2 features should be created
+        [01],[10]
+        For 1 tree, with max_dept = 2, only 4 features should be created
+        [0001],[0010],[0100],[1000]
+        """
+
+        for n in [1, 2, 3]:
+            mf = sktools.preprocessing.GradientBoostingFeatureGenerator(
+                sparse_feat=False,
+                max_depth=n,
+                n_estimators=1,
+                add_probs=False,
+                random_state=0,
+                stack_to_X=False,
+            )
+
+            mf.fit(self.X, self.y)
+
+            t = mf.transform(self.X)
+            t = np.unique(t, axis=0)
+
+            np.testing.assert_equal(np.sum(t, axis=1).sum(), 2 ** n)
+            np.testing.assert_equal(np.sum(t, axis=0).sum(), 2 ** n)
 
     def test_leaves_shape(self):
         """
@@ -139,7 +166,6 @@ class TestGBFeatures(unittest.TestCase):
         """
         Check if probabilites are added as extra colums
         """
-        from sklearn.datasets import make_classification
 
         # Needs more n_samples to be stable
         X, y = make_classification(n_samples=100_000, n_features=4)
