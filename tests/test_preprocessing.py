@@ -125,6 +125,8 @@ class TestGBFeatures(unittest.TestCase):
             t = mf.transform(self.X)
             t = np.unique(t, axis=0)
 
+            # Test that the created features are the desired
+            # by getting unique rows and aggregating to make sure that they are diagonal
             np.testing.assert_equal(np.sum(t, axis=1).sum(), 2 ** n)
             np.testing.assert_equal(np.sum(t, axis=0).sum(), 2 ** n)
 
