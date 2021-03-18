@@ -70,8 +70,11 @@ class TestGBFeatures(unittest.TestCase):
     def setUp(self):
         """Load data"""
         from sklearn.datasets import make_classification
+        import random
 
-        X, y = make_classification(n_features=4, n_samples=10_000)
+        random.seed(0)
+
+        X, y = make_classification(n_features=4, n_samples=10_000, random_state=0)
         self.X = X
         self.y = y
 
@@ -83,7 +86,11 @@ class TestGBFeatures(unittest.TestCase):
 
         for n in [1, 3, 5]:
             mf = sktools.preprocessing.GradientBoostingFeatureGenerator(
-                sparse_feat=False, max_depth=1, n_estimators=n, add_probs=False
+                sparse_feat=False,
+                max_depth=1,
+                n_estimators=n,
+                add_probs=False,
+                random_state=0,
             )
 
             mf.fit(self.X, self.y)
@@ -101,7 +108,7 @@ class TestGBFeatures(unittest.TestCase):
 
         for n in [1, 3, 4]:
             mf = sktools.preprocessing.GradientBoostingFeatureGenerator(
-                sparse_feat=False, max_depth=1, n_estimators=n
+                sparse_feat=False, max_depth=1, n_estimators=n, random_state=0
             )
             mf.fit(self.X, self.y)
 
@@ -115,13 +122,13 @@ class TestGBFeatures(unittest.TestCase):
 
         for n in [1, 3, 5]:
             mf = sktools.preprocessing.GradientBoostingFeatureGenerator(
-                add_probs=False, n_estimators=n
+                add_probs=False, n_estimators=n, random_state=0
             )
             mf.fit(self.X, self.y)
             no_prob = mf.transform(self.X).shape[1]
 
             mf = sktools.preprocessing.GradientBoostingFeatureGenerator(
-                add_probs=True, n_estimators=n
+                add_probs=True, n_estimators=n, random_state=0
             )
             mf.fit(self.X, self.y)
             prob = mf.transform(self.X).shape[1]
@@ -139,7 +146,7 @@ class TestGBFeatures(unittest.TestCase):
 
         for n in [1, 2, 3]:
             mf = sktools.preprocessing.GradientBoostingFeatureGenerator(
-                add_probs=False, n_estimators=1, max_depth=n
+                add_probs=False, n_estimators=1, max_depth=n, random_state=0
             )
             mf.fit(X, y)
             trans = mf.transform(X).shape[1] - 4

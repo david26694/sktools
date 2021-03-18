@@ -110,7 +110,7 @@ class GradientBoostingFeatureGenerator(BaseEstimator, TransformerMixin):
     -------
     >>> from sktools.preprocessing import GradientBoostingFeatureGenerator
     >>> from sklearn.datasets import make_classification
-    >>> X, y = make_classification(n_samples=80000)
+    >>> X, y = make_classification()
     >>> mf = GradientBoostingFeatureGenerator(sparse_feat=False)
     >>> mf.fit(X, y)
     >>> mf.transform(X)
