@@ -73,6 +73,7 @@ Here's a list of features that sktools currently offers:
 * ``sktools.ensemble.MedianForestRegressor`` applies the median instead of the mean when aggregating trees predictions.
 * ``sktools.linear_model.QuantileRegression`` sklearn style wrapper for quantile regression.
 * ``sktools.model_selection.BootstrapFold`` bootstrap cross-validator.
+* ``sktools.GradientBoostingFeatureGenerator`` Automated feature generation through gradient boosting.
 
 
 License

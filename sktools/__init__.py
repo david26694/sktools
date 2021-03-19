@@ -15,5 +15,5 @@ from .quantilegroups import (
 )
 from .linear_model import QuantileRegression
 from .ensemble import MedianForestRegressor
-from .preprocessing import CyclicFeaturizer
+from .preprocessing import CyclicFeaturizer, GradientBoostingFeatureGenerator
 from .model_selection import BootstrapFold
