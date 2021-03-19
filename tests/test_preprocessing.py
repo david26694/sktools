@@ -87,7 +87,6 @@ class TestGBFeatures(unittest.TestCase):
 
         for n in [1, 3, 5]:
             mf = sktools.preprocessing.GradientBoostingFeatureGenerator(
-                sparse_feat=False,
                 max_depth=1,
                 n_estimators=n,
                 add_probs=False,
@@ -112,7 +111,6 @@ class TestGBFeatures(unittest.TestCase):
 
         for n in [1, 2, 3]:
             mf = sktools.preprocessing.GradientBoostingFeatureGenerator(
-                sparse_feat=False,
                 max_depth=n,
                 n_estimators=1,
                 add_probs=False,
@@ -137,7 +135,7 @@ class TestGBFeatures(unittest.TestCase):
 
         for n in [1, 3, 4]:
             mf = sktools.preprocessing.GradientBoostingFeatureGenerator(
-                sparse_feat=False, max_depth=1, n_estimators=n, random_state=0
+                max_depth=1, n_estimators=n, random_state=0
             )
             mf.fit(self.X, self.y)
 

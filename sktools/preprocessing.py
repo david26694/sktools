@@ -97,9 +97,6 @@ class GradientBoostingFeatureGenerator(BaseEstimator, TransformerMixin):
         If 'stack_to_X==True' then '.transform' returns the original features with 'R' appended as columns.
         If 'stack_to_X==False' then  '.transform' returns only the leaves features from 'R'
 
-    sparse_feat: bool, default = False
-        If 'sparse_feat==True' then the input matrix from 'X' is cast as a sparse matrix as well as the 'R' matrix.
-
     add_probs: bool, default = False
         If 'add_probs==True' then the created features are appended a probability [0,1].
         If 'add_probs==False' features are binary
@@ -111,7 +108,7 @@ class GradientBoostingFeatureGenerator(BaseEstimator, TransformerMixin):
     >>> from sktools.preprocessing import GradientBoostingFeatureGenerator
     >>> from sklearn.datasets import make_classification
     >>> X, y = make_classification()
-    >>> mf = GradientBoostingFeatureGenerator(sparse_feat=False)
+    >>> mf = GradientBoostingFeatureGenerator()
     >>> mf.fit(X, y)
     >>> mf.transform(X)
 
@@ -127,7 +124,6 @@ class GradientBoostingFeatureGenerator(BaseEstimator, TransformerMixin):
     def __init__(
         self,
         stack_to_X=True,
-        sparse_feat=False,
         add_probs=False,
         regression=False,
         **kwargs,
@@ -135,11 +131,10 @@ class GradientBoostingFeatureGenerator(BaseEstimator, TransformerMixin):
 
         # Deciding whether to append features or simply return generated features
         self.stack_to_X = stack_to_X
-        self.sparse_feat = sparse_feat
         self.add_probs = add_probs
         self.regression = regression
 
-        if self.regression == True:
+        if self.regression:
             # Key arguments for the gradient boosting regressor
             self.gbm = GradientBoostingRegressor(**kwargs)
 
@@ -169,10 +164,7 @@ class GradientBoostingFeatureGenerator(BaseEstimator, TransformerMixin):
             return self.gbm.predict_proba(X)
 
     def _decode_leaves(self, X):
-        if self.sparse_feat:
-            return scipy.sparse.csr.csr_matrix(self.encoder.transform(X))
-        else:
-            return self.encoder.transform(X).todense()
+        return self.encoder.transform(X).todense()
 
     def fit(self, X, y):
 
@@ -187,48 +179,17 @@ class GradientBoostingFeatureGenerator(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X):
+        """
+        R contains the matrix with the encoded leaves. The shape depends upon the parameters.
+        P contains a two columns array with the probability.
+        """
         R = self._decode_leaves(self._get_leaves(X))
 
-        if self.sparse_feat:
-            if self.add_probs:
-                P = self._predict_probs(X)
-                X_new = (
-                    scipy.sparse.hstack(
-                        (
-                            scipy.sparse.csr.csr_matrix(X),
-                            R,
-                            scipy.sparse.csr.csr_matrix(P),
-                        )
-                    )
-                    if self.stack_to_X == True
-                    else R
-                )
-            else:
-                X_new = (
-                    scipy.sparse.hstack((scipy.sparse.csr.csr_matrix(X), R))
-                    if self.stack_to_X == True
-                    else R
-                )
+        if self.add_probs:
+            P = self._predict_probs(X)
+            R = np.hstack((R, P))
+            X_new = np.hstack((X, R)) if self.stack_to_X == True else R
 
         else:
-
-            if self.add_probs:
-                P = self._predict_probs(X)
-                R = np.hstack((R, P))
-                X_new = np.hstack((X, R)) if self.stack_to_X == True else R
-                """
-                X_new = (
-                    scipy.sparse.hstack(
-                        (
-                            scipy.sparse.csr.csr_matrix(X),
-                            R,
-                            scipy.sparse.csr.csr_matrix(P),
-                        )
-                    )
-                    if self.stack_to_X == True
-                    else R
-                )
-                """
-            else:
-                X_new = np.hstack((X, R)) if self.stack_to_X == True else R
+            X_new = np.hstack((X, R)) if self.stack_to_X == True else R
         return X_new
