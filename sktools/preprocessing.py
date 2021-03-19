@@ -100,7 +100,7 @@ class GradientBoostingFeatureGenerator(BaseEstimator, TransformerMixin):
     sparse_feat: bool, default = False
         If 'sparse_feat==True' then the input matrix from 'X' is cast as a sparse matrix as well as the 'R' matrix.
 
-    add_probs: bool, default = True
+    add_probs: bool, default = False
         If 'add_probs==True' then the created features are appended a probability [0,1].
         If 'add_probs==False' features are binary
 
