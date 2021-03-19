@@ -120,6 +120,8 @@ class GradientBoostingFeatureGenerator(BaseEstimator, TransformerMixin):
 
     .. [1] Practical Lessons from Predicting Clicks on Ads at Facebook, from
     https://research.fb.com/wp-content/uploads/2016/11/practical-lessons-from-predicting-clicks-on-ads-at-facebook.pdf
+
+    .. [2] Feature Generation with Gradient Boosted Decision Trees, Towards Data Science, Carlos Mougan
     """
 
     def __init__(
