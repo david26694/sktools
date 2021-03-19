@@ -86,7 +86,7 @@ class TestGBFeatures(unittest.TestCase):
         """
 
         for n in [1, 3, 5]:
-            mf = sktools.preprocessing.GradientBoostingFeatureGenerator(
+            mf = sktools.GradientBoostingFeatureGenerator(
                 max_depth=1,
                 n_estimators=n,
                 add_probs=False,
@@ -110,7 +110,7 @@ class TestGBFeatures(unittest.TestCase):
         """
 
         for n in [1, 2, 3]:
-            mf = sktools.preprocessing.GradientBoostingFeatureGenerator(
+            mf = sktools.GradientBoostingFeatureGenerator(
                 max_depth=n,
                 n_estimators=1,
                 add_probs=False,
@@ -134,7 +134,7 @@ class TestGBFeatures(unittest.TestCase):
         """
 
         for n in [1, 3, 4]:
-            mf = sktools.preprocessing.GradientBoostingFeatureGenerator(
+            mf = sktools.GradientBoostingFeatureGenerator(
                 max_depth=1, n_estimators=n, random_state=0
             )
             mf.fit(self.X, self.y)
@@ -148,7 +148,7 @@ class TestGBFeatures(unittest.TestCase):
         """
 
         for n in [1, 3, 5]:
-            mf = sktools.preprocessing.GradientBoostingFeatureGenerator(
+            mf = sktools.GradientBoostingFeatureGenerator(
                 add_probs=False, n_estimators=n, random_state=0
             )
             mf.fit(self.X, self.y)
@@ -171,7 +171,7 @@ class TestGBFeatures(unittest.TestCase):
         X, y = make_classification(n_samples=100_000, n_features=4)
 
         for n in [1, 2, 3]:
-            mf = sktools.preprocessing.GradientBoostingFeatureGenerator(
+            mf = sktools.GradientBoostingFeatureGenerator(
                 add_probs=False, n_estimators=1, max_depth=n, random_state=0
             )
             mf.fit(X, y)

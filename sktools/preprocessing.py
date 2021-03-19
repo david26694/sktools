@@ -105,7 +105,7 @@ class GradientBoostingFeatureGenerator(BaseEstimator, TransformerMixin):
 
     Example
     -------
-    >>> from sktools.preprocessing import GradientBoostingFeatureGenerator
+    >>> from sktools import GradientBoostingFeatureGenerator
     >>> from sklearn.datasets import make_classification
     >>> X, y = make_classification()
     >>> mf = GradientBoostingFeatureGenerator()
