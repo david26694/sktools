@@ -94,12 +94,12 @@ class GradientBoostingFeatureGenerator(BaseEstimator, TransformerMixin):
     ----------
     stack_to_X: bool, default = True
         Generates leaves features using the fitted self.gbm and saves them in R.
-        If 'stack_to_X==True' then '.transform' returns the original features with 'R' appended as columns.
-        If 'stack_to_X==False' then  '.transform' returns only the leaves features from 'R'
+        If `stack_to_X is True` then `.transform` returns the original features with 'R' appended as columns.
+        If `stack_to_X is False` then  `.transform` returns only the leaves features from 'R'
 
     add_probs: bool, default = False
-        If 'add_probs==True' then the created features are appended a probability [0,1].
-        If 'add_probs==False' features are binary
+        If `add_probs is True` then the created features are appended a probability [0,1].
+        If `add_probs is False` features are binary
 
 
 
