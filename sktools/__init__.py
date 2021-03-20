@@ -2,7 +2,7 @@
 
 __author__ = """David Masip Bonet"""
 __email__ = "david26694@gmail.com"
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 
 from .selectors import TypeSelector, ItemSelector
 from .matrix_denser import MatrixDenser
