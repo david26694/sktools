@@ -15,7 +15,7 @@ requirements = ['scikit-learn', 'pandas', 'scipy', 'numpy', 'category_encoders',
 
 setup_requirements = [ ]
 
-test_requirements = [ ]
+test_requirements = requirements
 
 setup(
     author="David Masip Bonet",
@@ -43,6 +43,7 @@ setup(
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
+    extras_require={"test": test_requirements},
     url='https://github.com/david26694/sktools',
     version='0.1.4',
     zip_safe=False,
