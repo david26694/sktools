@@ -54,7 +54,6 @@ Usage
   ...
 
 
-
 Features
 --------
 
@@ -75,6 +74,21 @@ Here's a list of features that sktools currently offers:
 * ``sktools.model_selection.BootstrapFold`` bootstrap cross-validator.
 * ``sktools.GradientBoostingFeatureGenerator`` Automated feature generation through gradient boosting.
 
+
+Contributing
+--------
+
+Fork/clone, in a fresh environment, run:
+
+.. code-block:: console
+
+        $ pip install -e ".[dev]"
+
+To check if the unit tests are ok, run
+
+.. code-block:: console
+
+        $ make test
 
 License
 -------
