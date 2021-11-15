@@ -16,7 +16,7 @@ requirements = ['scikit-learn', 'pandas', 'scipy', 'numpy', 'category_encoders',
 setup_requirements = []
 
 misc_requirements = [
-    "pip==19.2.3",
+    "pip==21.1",
     "bump2version==0.5.11",
     "wheel==0.33.6",
     "watchdog==0.9.0",
