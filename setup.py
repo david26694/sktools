@@ -18,7 +18,7 @@ setup_requirements = []
 misc_requirements = [
     "pip==21.1",
     "bump2version==0.5.11",
-    "wheel==0.33.6",
+    "wheel==0.38.1",
     "watchdog==0.9.0",
     "flake8==3.7.8",
     "tox==3.14.0",
